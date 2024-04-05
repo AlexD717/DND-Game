@@ -33,6 +33,7 @@ def SaveData(allPlayers, aviableWeapons):
 
 def LoadData():
   global aviableWeapons
+  global allPlayers
   with open('playerData.pkl', 'rb') as file:
     saveFile = pickle.load(file)
     allPlayers = saveFile[0]
@@ -44,7 +45,7 @@ def LoadData():
       print("The weapons " + player.name + " has are")
       for weapon in player.weaponList:
         print(weapon.name + " that does " + str(weapon.damage) + " damage")
-
+     
 def AskQuestion(questionText, validResults):
   userAnswer = input(questionText)
   if (userAnswer in validResults):
@@ -84,12 +85,17 @@ def BuyItem(aviableItems, player):
   if (userChoice == "yes"):
     BuyItem(aviableItems, player)    
 
+shopWeapons = []
+def RandomiseShopItems():
+  global shopWeapons
+  shopWeapons = [random.choices(aviableWeapons, k=5)][0]
+RandomiseShopItems()
+
 def Shop():
   time.sleep(1)
   print("\nYou are at the shop")
   time.sleep(0.2)
   print("Here are your weapon choices")
-  shopWeapons = [random.choices(aviableWeapons, k=5)][0]
   for weapon in shopWeapons:
     print("This weapon is a " + weapon.name + " that does " + str(weapon.damage) + " damage and costs " + str(weapon.cost) + " coins.")
   for player in allPlayers:
@@ -116,6 +122,7 @@ def AskToLoadData():
       CreatePlayers()
 
 def CreatePlayers():
+  global allPlayers
   numPlayers = int(AskQuestion("How many people are playing? ", ["1", "2", "3", "4"]))
   allPlayers = []
   for i in range(numPlayers):
