@@ -10,3 +10,7 @@ class Weapon:
     self.name = name
     self.damage = damage
 
+class Player:
+  def __init__(self, name, attackModifier):
+    self.name = name
+    self.attackModifier = attackModifier
