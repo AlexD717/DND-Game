@@ -19,6 +19,7 @@ class Player:
     self.name = name
     self.attackModifier = attackModifier
     self.weaponList = [Weapon("Damaged Short Sword", 1, 1)]
+    self.money = 0
 
 def AskQuestion(questionText, validResults):
   userAnswer = input(questionText)
@@ -30,7 +31,7 @@ def AskQuestion(questionText, validResults):
     time.sleep(0.5)
     print("Try again")
     time.sleep(0.5)
-    AskQuestion(questionText, validResults)
+    return AskQuestion(questionText, validResults)
 
 def StartArea():
   time.sleep(1)
@@ -46,19 +47,32 @@ def StartArea():
 aviableWeapons = [Weapon("Short Sword", 3, 5), Weapon("Shinning Short Sword", 5, 7)]
 
 def BuyItem(aviableItems, player):
-  userChoice = AskQuestion("What would you like to buy? ")
+  itemNames = [item.name for item in aviableItems]
+  userChoice = AskQuestion("What would you like to buy? ", itemNames)
+  itemBuying = aviableItems[itemNames.index(userChoice)]
+  if (player.money >= itemBuying.cost):
+    player.money -= itemBuying.cost
+    player.weaponList.append(itemBuying)
+    print("You bought a " + itemBuying.name + " for " + str(itemBuying.cost) + " coins")
+    print("You now have " + str(player.money) + " coins")
+    print(len(player.weaponList))
+  else:
+    print("You don't have enough money to buy that")
+  userChoice = AskQuestion("Whould you like to buy anything else? ", ["yes", "no"])
+  if (userChoice == "yes"):
+    BuyItem(aviableItems, player)    
 
 def Shop():
   time.sleep(1)
-  print("You are at the shop")
+  print("\nYou are at the shop")
   time.sleep(0.2)
   print("Here are your weapon choices")
   shopWeapons = [random.choices(aviableWeapons, k=5)][0]
-  print(shopWeapons)
   for weapon in shopWeapons:
     print("This weapon is a " + weapon.name + " that does " + str(weapon.damage) + " damage and costs " + str(weapon.cost) + " coins.")
   for player in allPlayers:
-    userChoice = AskQuestion("Whould " + player.name + "like to buy anything? ", "yes", "no")
+    userChoice = AskQuestion("Whould " + player.name + " like to buy anything? ", ["yes", "no"])
+    print(userChoice)
     if (userChoice == "yes"):
       BuyItem(shopWeapons, player)
   print("Come back later when the items will be refreshed")
@@ -66,7 +80,7 @@ def Shop():
 
 def Dungeon():
   time.sleep(1)
-  print("You have entered the dungeon")
+  print("\nYou have entered the dungeon")
 
 numPlayers = int(AskQuestion("How many people are playing? ", ["1", "2", "3", "4"]))
 allPlayers = []
