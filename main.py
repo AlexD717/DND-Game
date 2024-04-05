@@ -1,5 +1,19 @@
 import time
 import random
+import pickle
+import os.path
+
+def SaveData(allPlayers):
+  with open('playerData.pkl', 'wb') as file:
+    pickle.dump(allPlayers, file)
+
+def LoadData():
+  with open('playerData.pkl', 'rb') as file:
+    allPlayers = pickle.load(file)
+    for player in allPlayers:
+      print(player.name)
+      print(player.money)
+      print(player.weaponList[0].damage)
 
 class Enemy:
   def __init__(self, health, ac, damage, attackModifier):
@@ -15,11 +29,13 @@ class Weapon:
     self.cost = cost
 
 class Player:
-  def __init__(self, name, attackModifier):
+  def __init__(self, name, attackModifier, weaponList, money):
     self.name = name
     self.attackModifier = attackModifier
-    self.weaponList = [Weapon("Damaged Short Sword", 1, 1)]
-    self.money = 0
+    self.weaponList = weaponList
+    self.money = money
+  def __reduce__(self):
+    return (self.__class__, (self.name, self.attackModifier, self.weaponList, self.money))
 
 def AskQuestion(questionText, validResults):
   userAnswer = input(questionText)
@@ -72,7 +88,6 @@ def Shop():
     print("This weapon is a " + weapon.name + " that does " + str(weapon.damage) + " damage and costs " + str(weapon.cost) + " coins.")
   for player in allPlayers:
     userChoice = AskQuestion("Whould " + player.name + " like to buy anything? ", ["yes", "no"])
-    print(userChoice)
     if (userChoice == "yes"):
       BuyItem(shopWeapons, player)
   print("Come back later when the items will be refreshed")
@@ -82,9 +97,23 @@ def Dungeon():
   time.sleep(1)
   print("\nYou have entered the dungeon")
 
+def AskToLoadData():
+  loadData = AskQuestion("Whould you like to load your previous data? ", ["yes", "no"])
+  if (loadData == "yes"):
+    LoadData()
+    StartArea()
+  else:
+    loadData = AskQuestion("Are you sure? ", ["yes", "no"])
+    if (loadData == "no"):
+      AskToLoadData()
+
+if (os.path.isfile("./playerData.pkl")):
+  AskToLoadData()
+  
 numPlayers = int(AskQuestion("How many people are playing? ", ["1", "2", "3", "4"]))
 allPlayers = []
 for i in range(numPlayers):
   playerName = input("What is the name of player " + str(i + 1) + "? ")
-  allPlayers.append(Player(playerName, 0))
+  allPlayers.append(Player(playerName, 0, [Weapon("Short Sword", 1, 1)], 0))
+SaveData(allPlayers)
 StartArea()
