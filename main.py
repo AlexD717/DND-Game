@@ -3,18 +3,6 @@ import random
 import pickle
 import os.path
 
-def SaveData(allPlayers):
-  with open('playerData.pkl', 'wb') as file:
-    pickle.dump(allPlayers, file)
-
-def LoadData():
-  with open('playerData.pkl', 'rb') as file:
-    allPlayers = pickle.load(file)
-    for player in allPlayers:
-      print(player.name)
-      print(player.money)
-      print(player.weaponList[0].damage)
-
 class Enemy:
   def __init__(self, health, ac, damage, attackModifier):
     self.health = health
@@ -36,6 +24,26 @@ class Player:
     self.money = money
   def __reduce__(self):
     return (self.__class__, (self.name, self.attackModifier, self.weaponList, self.money))
+
+aviableWeapons = [Weapon("Dagger", 1, 1), Weapon("Short Sword", 3, 5)]
+
+def SaveData(allPlayers, aviableWeapons):
+  with open('playerData.pkl', 'wb') as file:
+    pickle.dump([allPlayers, aviableWeapons], file)
+
+def LoadData():
+  global aviableWeapons
+  with open('playerData.pkl', 'rb') as file:
+    saveFile = pickle.load(file)
+    allPlayers = saveFile[0]
+    aviableWeapons = saveFile[1]
+    print("You are playing a " + str(len(allPlayers)) + " player game.")
+    print("The players are ")
+    for player in allPlayers:
+      print(player.name + " with " + str(player.money) + " coins")
+      print("The weapons " + player.name + " has are")
+      for weapon in player.weaponList:
+        print(weapon.name + " that does " + str(weapon.damage) + " damage")
 
 def AskQuestion(questionText, validResults):
   userAnswer = input(questionText)
@@ -59,8 +67,6 @@ def StartArea():
     Shop()
   else:
     Dungeon()
-
-aviableWeapons = [Weapon("Short Sword", 3, 5), Weapon("Shinning Short Sword", 5, 7)]
 
 def BuyItem(aviableItems, player):
   itemNames = [item.name for item in aviableItems]
@@ -106,14 +112,19 @@ def AskToLoadData():
     loadData = AskQuestion("Are you sure? ", ["yes", "no"])
     if (loadData == "no"):
       AskToLoadData()
+    else:
+      CreatePlayers()
+
+def CreatePlayers():
+  numPlayers = int(AskQuestion("How many people are playing? ", ["1", "2", "3", "4"]))
+  allPlayers = []
+  for i in range(numPlayers):
+    playerName = input("What is the name of player " + str(i + 1) + "? ")
+    allPlayers.append(Player(playerName, 0, [Weapon("Dagger", 1, 1)], 0))
+  SaveData(allPlayers, aviableWeapons)
+  StartArea()
 
 if (os.path.isfile("./playerData.pkl")):
   AskToLoadData()
-  
-numPlayers = int(AskQuestion("How many people are playing? ", ["1", "2", "3", "4"]))
-allPlayers = []
-for i in range(numPlayers):
-  playerName = input("What is the name of player " + str(i + 1) + "? ")
-  allPlayers.append(Player(playerName, 0, [Weapon("Short Sword", 1, 1)], 0))
-SaveData(allPlayers)
-StartArea()
+else:
+  CreatePlayers()
