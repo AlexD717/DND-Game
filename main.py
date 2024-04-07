@@ -19,6 +19,7 @@ class Weapon:
     self.number = numberDice
     self.dice = dice
     self.cost = cost
+    self.damage = numberDice + "d" + dice + " + " + str(baseDamage)
 
 class Player:
   def __init__(self, name, ac, attackModifier, weaponList, coins):
@@ -44,13 +45,13 @@ def LoadData():
     saveFile = pickle.load(file)
     allPlayers = saveFile[0]
     aviableWeapons = saveFile[1]
-    print("You are playing a " + str(len(allPlayers)) + " player game.")
+    print(f"You are playing a {len(allPlayers)} player game.")
     print("The players are ")
     for player in allPlayers:
-      print(player.name + " with " + str(player.coins) + " coins")
-      print("The weapons " + player.name + " has are")
+      print(f"{player.name} with {player.coins} coins")
+      print("The weapons {player.name} has are")
       for weapon in player.weaponList:
-        print(weapon.name + " that does " + str(weapon.damage) + " damage")
+        print(f"{weapon.name} that does {weapon.damage} damage")
 
 def AskQuestion(questionText, validResults):
   userAnswer = input(questionText)
@@ -74,7 +75,7 @@ def StartArea():
   if (userResponse == "shop"):
     print("You are visiting the shop")
     Shop()
-  else:
+  elif userResponse == "dungeon":
     Dungeon()
 
 def BuyItem(aviableItems, player):
@@ -106,7 +107,7 @@ def Shop():
   time.sleep(0.2)
   print("Here are your weapon choices")
   for weapon in shopWeapons:
-    print("This weapon is a " + weapon.name + " that does " + str(weapon.damage) + " damage and costs " + str(weapon.cost) + " coins.")
+    print(f"This weapon is a {weapon.name} that does {weapon.damage} damage and costs {weapon.cost} coins.")
   for player in allPlayers:
     userChoice = AskQuestion("Whould " + player.name + " like to buy anything? ", ["yes", "no"])
     if (userChoice == "yes"):
@@ -125,6 +126,8 @@ def Dungeon():
   time.sleep(1)
   print("\nYou have entered the dungeon")
   room = 0
+  #randomising order
+  random.shuffle(allPlayers)
   while (room < len(roomEnemies)):
     print("\nYou are entering room " + str(room + 1))
     if (TurnCombat(allPlayers, roomEnemies[room])):
@@ -135,6 +138,8 @@ def Dungeon():
       print("You have failed to defeat room " + str(room + 1))
       SaveData(allPlayers, aviableWeapons)
       StartArea()
+  print(f"Congragulations, you have completed all {len(roomEnemies)} levels of the dungeon")
+  StartArea()
 
 def TurnCombat(allPlayers, roomEnemies):
   for player in allPlayers:
@@ -147,7 +152,7 @@ def TurnCombat(allPlayers, roomEnemies):
     weaponNames = [weapon.name for weapon in player.weaponList]
     print("Your weapon choices are")
     for weapon in player.weaponList:
-      print(weapon.name + " that does " + str(weapon.damage) + " damage")
+      print(f"{weapon.name} that does {weapon.damage} damage")
     userChoice = AskQuestion("Which weapon would you like to use? ", weaponNames)
     weaponUsing = player.weaponList[weaponNames.index(userChoice)]
     time.sleep(1)
@@ -159,31 +164,31 @@ def TurnCombat(allPlayers, roomEnemies):
       time.sleep(0.5)
       enemyAttacking.health -= damageDealt
       if (enemyAttacking.health <= 0):
-        print("Congradulations, you have managed to defeat the " + enemyAttacking.name + " and got " + str(enemyAttacking.coinsToGiveOnDeath) + " coins")
+        print(f"Congradulations, you have managed to defeat the {enemyAttacking.name} and got {enemyAttacking.coinsToGiveOnDeath} coins")
         time.sleep(0.5)
         player.coins += enemyAttacking.coinsToGiveOnDeath
         roomEnemies.remove(enemyAttacking)
         if (len(roomEnemies) <= 0):
           return True
     else:
-      print("\nThe " + enemyAttacking.name + " managed to dodge your attack")
+      print(f"\nThe {enemyAttacking.name} managed to dodge your attack")
   print("")
   for enemy in roomEnemies:
     playerAttacking = random.choice(allPlayers)
-    print("The " + enemy.name + " is attacking " + playerAttacking.name)
+    print(f"The {enemy.name} is attacking {playerAttacking.name}")
     time.sleep(1)
     if (AttackHit(enemy.attackModifier, playerAttacking.ac)):
-      print("The attach hit and dealt " + str(enemy.damage) + " damage")
+      print(f"The attach hit and dealt {enemy.damage} damage")
       time.sleep(0.5)
       playerAttacking.health -= enemy.damage
       if (playerAttacking.health <= 0):
-        print("The attack has killed the weakling who calls himself " + playerAttacking.name)
+        print(f"The attack has killed the weakling who calls themself {playerAttacking.name}")
         time.sleep(0.5)
         allPlayers.remove(playerAttacking)
         if (len(allPlayers) <= 0):
           return False
       else:
-        print(playerAttacking.name + " now has " + str(playerAttacking.health) + " health")
+        print(f"{playerAttacking.name} now has {playerAttacking.health} health")
         time.sleep(0.5)
   return TurnCombat(allPlayers, roomEnemies)
 
