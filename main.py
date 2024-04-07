@@ -13,9 +13,11 @@ class Enemy:
     self.coinsToGiveOnDeath = coinsToGiveOnDeath
 #Adding dice rolls to weapon damage
 class Weapon:
-  def __init__(self, name, damage, cost):
+  def __init__(self, name, baseDamage, numberDice, dice, cost):
     self.name = name
-    self.damage = damage
+    self.baseDamage = baseDamage
+    self.number = numberDice
+    self.dice = dice
     self.cost = cost
 
 class Player:
@@ -29,7 +31,7 @@ class Player:
   def __reduce__(self):
     return (self.__class__, (self.name, self.ac, self.attackModifier, self.weaponList, self.coins))
 
-aviableWeapons = [Weapon("Dagger", 1, 1), Weapon("Short Sword", 3, 5)]
+aviableWeapons = [Weapon("Dagger",0, 1, 4, 1), Weapon("Short Sword", 1, 3, 4, 5)]
 
 def SaveData(allPlayers, aviableWeapons):
   with open('playerData.pkl', 'wb') as file:
@@ -152,9 +154,10 @@ def TurnCombat(allPlayers, roomEnemies):
     print("Rolling the dice")
     time.sleep(1)
     if(AttackHit(player.attackModifier, enemyAttacking.ac)):
-      print("\nYour attack has hit the " + enemyAttacking.name + " and dealt " + str(weaponUsing.damage) + " damage")
+      damageDealt = sum([random.randint(1, weaponUsing.dice) for i in range(weaponUsing.number)]) + weaponUsing.baseDamage
+      print(f"\nYour attack has hit the {enemyAttacking.name} and dealt {damageDealt} damage")
       time.sleep(0.5)
-      enemyAttacking.health -= weaponUsing.damage
+      enemyAttacking.health -= damageDealt
       if (enemyAttacking.health <= 0):
         print("Congradulations, you have managed to defeat the " + enemyAttacking.name + " and got " + str(enemyAttacking.coinsToGiveOnDeath) + " coins")
         time.sleep(0.5)
