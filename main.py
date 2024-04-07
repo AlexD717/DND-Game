@@ -29,6 +29,7 @@ class Player:
     self.attackModifier = attackModifier
     self.weaponList = weaponList
     self.coins = coins
+    self.status = "Not in combat"
   def __reduce__(self):
     return (self.__class__, (self.name, self.ac, self.attackModifier, self.weaponList, self.coins))
 
@@ -130,6 +131,8 @@ def Dungeon():
   random.shuffle(allPlayers)
   while (room < len(roomEnemies)):
     print(f"\nYou are entering room {room+1}")
+    for player in allPlayers:
+      player.status = "engaged"
     if (TurnCombat(allPlayers, roomEnemies[room])):
       print(f"You have defeated room {room+1}")
       room += 1
@@ -140,7 +143,7 @@ def Dungeon():
       StartArea()
   print(f"Congragulations, you have completed all {len(roomEnemies)} levels of the dungeon")
   StartArea()
-
+#implementing engage/disengage
 def TurnCombat(allPlayers, roomEnemies):
   currentRoomEnemies = roomEnemies
   for player in allPlayers:
@@ -148,35 +151,54 @@ def TurnCombat(allPlayers, roomEnemies):
     enemyNames = [enemy.name for enemy in currentRoomEnemies]
     for enemyName in enemyNames:
       print(enemyName)
-    userChoice = AskQuestion(f"Which enemy would {player.name} like to attack? ", enemyNames)
-    enemyAttacking = currentRoomEnemies[enemyNames.index(userChoice)]
-    weaponNames = [weapon.name for weapon in player.weaponList]
-    print("Your weapon choices are")
-    for weapon in player.weaponList:
-      print(f"{weapon.name} that does {weapon.damage} damage")
-    userChoice = AskQuestion("Which weapon would you like to use? ", weaponNames)
-    weaponUsing = player.weaponList[weaponNames.index(userChoice)]
-    time.sleep(1)
-    print("Rolling the dice")
-    time.sleep(1)
-    if(AttackHit(player.attackModifier, enemyAttacking.ac)):
-      damageDealt = sum([random.randint(1, weaponUsing.dice) for i in range(weaponUsing.number)]) + weaponUsing.baseDamage
-      print(f"\nYour attack has hit the {enemyAttacking.name} and dealt {damageDealt} damage")
-      time.sleep(0.5)
-      enemyAttacking.health -= damageDealt
-      if (enemyAttacking.health <= 0):
-        print(f"Congradulations, you have managed to defeat the {enemyAttacking.name} and got {enemyAttacking.coinsToGiveOnDeath} coins")
+    enemyNames.append("disengage")
+    if player.status == "disengaging":
+      playerStatusChoice = AskQuestion(f"Would {player.name} like to complete their retreat or re-engage? (retreat/re-engage) ", ["retreat", "re-engage"])
+      if playerStatusChoice == "retreat":
+        print(f"{player.name} has completed their cowardly retreat")
+        player.status = "disengaged"
+      elif playerStatusChoice == "re-engage":
+        player.status = "engaged"
+    if player.status == "engaged":
+      userChoice = AskQuestion(f"Which enemy would {player.name} like to attack? Alternatively, choose to disengage. ", enemyNames)
+      if userChoice == "disengage":
+        print(f"{player.name} has decided to try and run away.")
+        player.status = "disengaging"
+        continue
+      enemyAttacking = currentRoomEnemies[enemyNames.index(userChoice)]
+      weaponNames = [weapon.name for weapon in player.weaponList]
+      print("Your weapon choices are")
+      for weapon in player.weaponList:
+        print(f"{weapon.name} that does {weapon.damage} damage")
+      userChoice = AskQuestion("Which weapon would you like to use? ", weaponNames)
+      weaponUsing = player.weaponList[weaponNames.index(userChoice)]
+      time.sleep(1)
+      print("Rolling the dice")
+      time.sleep(1)
+      if(AttackHit(player.attackModifier, enemyAttacking.ac)):
+        damageDealt = sum([random.randint(1, weaponUsing.dice) for i in range(weaponUsing.number)]) + weaponUsing.baseDamage
+        print(f"\nYour attack has hit the {enemyAttacking.name} and dealt {damageDealt} damage")
         time.sleep(0.5)
-        player.coins += enemyAttacking.coinsToGiveOnDeath
-        currentRoomEnemies.remove(enemyAttacking)
-        if (len(currentRoomEnemies) <= 0):
-          return True
-    else:
-      print(f"\nThe {enemyAttacking.name} managed to dodge your attack")
-  print("")
-  
+        enemyAttacking.health -= damageDealt
+        if (enemyAttacking.health <= 0):
+          print(f"Congradulations, you have managed to defeat the {enemyAttacking.name} and got {enemyAttacking.coinsToGiveOnDeath} coins")
+          time.sleep(0.5)
+          player.coins += enemyAttacking.coinsToGiveOnDeath
+          currentRoomEnemies.remove(enemyAttacking)
+          if (len(currentRoomEnemies) <= 0):
+            return True
+      else:
+        print(f"\nThe {enemyAttacking.name} managed to dodge your attack")
+    print("")
+    
+  playersInCombat = [player for player in allPlayers if player.status != "disengaged"]
+  if len(playersInCombat) == 0:
+    unluckyPlayer = random.choice(allPlayers)
+    print(f"Since there are no players in combat, {unluckyPlayer.name} has decided to volunteer to be a punching bag.")
+    unluckyPlayer.status = "engaged"
+    playersInCombat = [unluckyPlayer]
   for enemy in currentRoomEnemies:
-    playerAttacking = random.choice(allPlayers)
+    playerAttacking = random.choice(playersInCombat)
     print(f"The {enemy.name} is attacking {playerAttacking.name}")
     time.sleep(1)
     if (AttackHit(enemy.attackModifier, playerAttacking.ac)):
