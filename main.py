@@ -11,7 +11,7 @@ class Enemy:
     self.attackModifier = attackModifier
     self.ac = ac
     self.coinsToGiveOnDeath = coinsToGiveOnDeath
-
+#Adding dice rolls to weapon damage
 class Weapon:
   def __init__(self, name, damage, cost):
     self.name = name
