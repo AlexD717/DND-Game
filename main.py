@@ -13,13 +13,14 @@ class Enemy:
     self.coinsToGiveOnDeath = coinsToGiveOnDeath
 #Adding dice rolls to weapon damage
 class Weapon:
-  def __init__(self, name, baseDamage, numberDice, dice, cost):
+  def __init__(self, name, damage, cost):
     self.name = name
-    self.baseDamage = baseDamage
-    self.number = numberDice
-    self.dice = dice
+    self.baseDamage = damage.split(" + ")[1]
+    damage = damage.split(" + ")[0]
+    self.number = damage.split("d")[0]
+    self.dice = damage.split("d")[1]
     self.cost = cost
-    self.damage = str(numberDice) + "d" + str(dice) + " + " + str(baseDamage)
+    self.damage = damage
 
 class Player:
   def __init__(self, name, ac, attackModifier, weaponList, coins):
@@ -33,7 +34,7 @@ class Player:
   def __reduce__(self):
     return (self.__class__, (self.name, self.ac, self.attackModifier, self.weaponList, self.coins))
 
-availableWeapons = [Weapon("Dagger", 0, 1, 4, 1), Weapon("Short Sword", 1, 3, 4, 5)]
+availableWeapons = [Weapon("Dagger", "1d4 + 0", 1), Weapon("Short Sword", "3d4 + 1", 5)]
 
 def SaveData(allPlayers, availableWeapons):
   with open('playerData.pkl', 'wb') as file:
@@ -195,7 +196,7 @@ def TurnCombat(allPlayers, roomEnemies):
   if len(playersInCombat) == 0:
     unluckyPlayer = random.choice(allPlayers)
     print(f"Since there are no players in combat, {unluckyPlayer.name} has decided to volunteer to be a punching bag.")
-    unluckyPlayer.status = "engaged"
+    unluckyPlayer.status = "disengaging"
     playersInCombat = [unluckyPlayer]
   for enemy in currentRoomEnemies:
     playerAttacking = random.choice(playersInCombat)
