@@ -85,8 +85,8 @@ def BuyItem(aviableItems, player):
   if (player.coins >= itemBuying.cost):
     player.coins -= itemBuying.cost
     player.weaponList.append(itemBuying)
-    print("You bought a " + itemBuying.name + " for " + str(itemBuying.cost) + " coins")
-    print("You now have " + str(player.coins) + " coins")
+    print(f"You bought a {itemBuying.name} for {itemBuying.cost} coins")
+    print(f"You now have {player.coins} coins")
     print(len(player.weaponList))
   else:
     print("You don't have enough coins to buy that")
@@ -109,7 +109,7 @@ def Shop():
   for weapon in shopWeapons:
     print(f"This weapon is a {weapon.name} that does {weapon.damage} damage and costs {weapon.cost} coins.")
   for player in allPlayers:
-    userChoice = AskQuestion("Whould " + player.name + " like to buy anything? ", ["yes", "no"])
+    userChoice = AskQuestion(f"Whould {player.name} like to buy anything? ", ["yes", "no"])
     if (userChoice == "yes"):
       BuyItem(shopWeapons, player)
   print("Come back later when the items will be refreshed")
@@ -129,13 +129,13 @@ def Dungeon():
   #randomising order
   random.shuffle(allPlayers)
   while (room < len(roomEnemies)):
-    print("\nYou are entering room " + str(room + 1))
+    print(f"\nYou are entering room {room+1}")
     if (TurnCombat(allPlayers, roomEnemies[room])):
-      print("You have defeated room " + str(room + 1))
+      print(f"You have defeated room {room+1}")
       room += 1
       SaveData(allPlayers, aviableWeapons)
     else:
-      print("You have failed to defeat room " + str(room + 1))
+      print(f"You have failed to defeat room {room+1}")
       SaveData(allPlayers, aviableWeapons)
       StartArea()
   print(f"Congragulations, you have completed all {len(roomEnemies)} levels of the dungeon")
@@ -147,7 +147,7 @@ def TurnCombat(allPlayers, roomEnemies):
     enemyNames = [enemy.name for enemy in roomEnemies]
     for enemyName in enemyNames:
       print(enemyName)
-    userChoice = AskQuestion("Which enemy would " + player.name + " like to attack? ", enemyNames)
+    userChoice = AskQuestion(f"Which enemy would {player.name} like to attack? ", enemyNames)
     enemyAttacking = roomEnemies[enemyNames.index(userChoice)]
     weaponNames = [weapon.name for weapon in player.weaponList]
     print("Your weapon choices are")
@@ -222,8 +222,8 @@ def CreatePlayers():
       AskQuestion("How many people are playing? ", ["1", "2", "3", "4"]))
   allPlayers = []
   for i in range(numPlayers):
-    playerName = input("What is the name of player " + str(i + 1) + "? ")
-    allPlayers.append(Player(playerName, 10, 0, [Weapon("Dagger", 1, 1)], 0))
+    playerName = input(f"What is the name of player {i+1}? ")
+    allPlayers.append(Player(playerName, 10, 0, [Weapon("Dagger",0, 1, 4, 1)], 0))
   SaveData(allPlayers, aviableWeapons)
   StartArea()
 
