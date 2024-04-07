@@ -19,7 +19,7 @@ class Weapon:
     self.number = numberDice
     self.dice = dice
     self.cost = cost
-    self.damage = numberDice + "d" + dice + " + " + str(baseDamage)
+    self.damage = str(numberDice) + "d" + str(dice) + " + " + str(baseDamage)
 
 class Player:
   def __init__(self, name, ac, attackModifier, weaponList, coins):
@@ -32,19 +32,19 @@ class Player:
   def __reduce__(self):
     return (self.__class__, (self.name, self.ac, self.attackModifier, self.weaponList, self.coins))
 
-aviableWeapons = [Weapon("Dagger",0, 1, 4, 1), Weapon("Short Sword", 1, 3, 4, 5)]
+availableWeapons = [Weapon("Dagger", 0, 1, 4, 1), Weapon("Short Sword", 1, 3, 4, 5)]
 
-def SaveData(allPlayers, aviableWeapons):
+def SaveData(allPlayers, availableWeapons):
   with open('playerData.pkl', 'wb') as file:
-    pickle.dump([allPlayers, aviableWeapons], file)
+    pickle.dump([allPlayers, availableWeapons], file)
 
 def LoadData():
-  global aviableWeapons
+  global availableWeapons
   global allPlayers
   with open('playerData.pkl', 'rb') as file:
     saveFile = pickle.load(file)
     allPlayers = saveFile[0]
-    aviableWeapons = saveFile[1]
+    availableWeapons = saveFile[1]
     print(f"You are playing a {len(allPlayers)} player game.")
     print("The players are ")
     for player in allPlayers:
@@ -78,10 +78,10 @@ def StartArea():
   elif userResponse == "dungeon":
     Dungeon()
 
-def BuyItem(aviableItems, player):
-  itemNames = [item.name for item in aviableItems]
+def BuyItem(availableItems, player):
+  itemNames = [item.name for item in availableItems]
   userChoice = AskQuestion("What would you like to buy? ", itemNames)
-  itemBuying = aviableItems[itemNames.index(userChoice)]
+  itemBuying = availableItems[itemNames.index(userChoice)]
   if (player.coins >= itemBuying.cost):
     player.coins -= itemBuying.cost
     player.weaponList.append(itemBuying)
@@ -92,13 +92,13 @@ def BuyItem(aviableItems, player):
     print("You don't have enough coins to buy that")
   userChoice = AskQuestion("Whould you like to buy anything else? ", ["yes", "no"])
   if (userChoice == "yes"):
-    BuyItem(aviableItems, player)
+    BuyItem(availableItems, player)
 
 shopWeapons = []
 
 def RandomiseShopItems():
   global shopWeapons
-  shopWeapons = [random.choices(aviableWeapons, k=5)][0]
+  shopWeapons = [random.choices(availableWeapons, k=5)][0]
 RandomiseShopItems()
 
 def Shop():
@@ -133,22 +133,23 @@ def Dungeon():
     if (TurnCombat(allPlayers, roomEnemies[room])):
       print(f"You have defeated room {room+1}")
       room += 1
-      SaveData(allPlayers, aviableWeapons)
+      SaveData(allPlayers, availableWeapons)
     else:
       print(f"You have failed to defeat room {room+1}")
-      SaveData(allPlayers, aviableWeapons)
+      SaveData(allPlayers, availableWeapons)
       StartArea()
   print(f"Congragulations, you have completed all {len(roomEnemies)} levels of the dungeon")
   StartArea()
 
 def TurnCombat(allPlayers, roomEnemies):
+  currentRoomEnemies = roomEnemies
   for player in allPlayers:
     print("\nThe enemies in this room are ")
-    enemyNames = [enemy.name for enemy in roomEnemies]
+    enemyNames = [enemy.name for enemy in currentRoomEnemies]
     for enemyName in enemyNames:
       print(enemyName)
     userChoice = AskQuestion(f"Which enemy would {player.name} like to attack? ", enemyNames)
-    enemyAttacking = roomEnemies[enemyNames.index(userChoice)]
+    enemyAttacking = currentRoomEnemies[enemyNames.index(userChoice)]
     weaponNames = [weapon.name for weapon in player.weaponList]
     print("Your weapon choices are")
     for weapon in player.weaponList:
@@ -167,18 +168,19 @@ def TurnCombat(allPlayers, roomEnemies):
         print(f"Congradulations, you have managed to defeat the {enemyAttacking.name} and got {enemyAttacking.coinsToGiveOnDeath} coins")
         time.sleep(0.5)
         player.coins += enemyAttacking.coinsToGiveOnDeath
-        roomEnemies.remove(enemyAttacking)
-        if (len(roomEnemies) <= 0):
+        currentRoomEnemies.remove(enemyAttacking)
+        if (len(currentRoomEnemies) <= 0):
           return True
     else:
       print(f"\nThe {enemyAttacking.name} managed to dodge your attack")
   print("")
-  for enemy in roomEnemies:
+  
+  for enemy in currentRoomEnemies:
     playerAttacking = random.choice(allPlayers)
     print(f"The {enemy.name} is attacking {playerAttacking.name}")
     time.sleep(1)
     if (AttackHit(enemy.attackModifier, playerAttacking.ac)):
-      print(f"The attach hit and dealt {enemy.damage} damage")
+      print(f"The attack hit and dealt {enemy.damage} damage")
       time.sleep(0.5)
       playerAttacking.health -= enemy.damage
       if (playerAttacking.health <= 0):
@@ -190,18 +192,18 @@ def TurnCombat(allPlayers, roomEnemies):
       else:
         print(f"{playerAttacking.name} now has {playerAttacking.health} health")
         time.sleep(0.5)
-  return TurnCombat(allPlayers, roomEnemies)
+    else:
+      print(f"The {enemy.name}'s attack missed due to a skill issue")
+  return TurnCombat(allPlayers, currentRoomEnemies)
 
 def AttackHit(attackMod, ac):
   roll = random.randint(1, 20)
-  if (roll == 1):
+  if (roll == 1) or roll + attackMod < ac:
     return False
-  elif (roll == 20):
-    return True
-  elif (roll + attackMod >= ac):
+  elif (roll == 20) or roll + attackMod >= ac:
     return True
   else:
-    return False
+    raise Exception("Something went wrong calculating if the attack hit or not")
 
 def AskToLoadData():
   loadData = AskQuestion("Whould you like to load your previous data? ",
@@ -224,7 +226,7 @@ def CreatePlayers():
   for i in range(numPlayers):
     playerName = input(f"What is the name of player {i+1}? ")
     allPlayers.append(Player(playerName, 10, 0, [Weapon("Dagger",0, 1, 4, 1)], 0))
-  SaveData(allPlayers, aviableWeapons)
+  SaveData(allPlayers, availableWeapons)
   StartArea()
 
 if (os.path.isfile("./playerData.pkl")):
