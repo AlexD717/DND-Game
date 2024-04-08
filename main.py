@@ -122,7 +122,7 @@ def Shop():
   StartArea()
 
 def SellItems(player: Player):
-  if (len(player.weaponList) > 0):
+  if (len(player.weaponList) > 1):
     print("These are your items")
     userChoices = []
     for weapon in player.weaponList:
@@ -277,7 +277,7 @@ def CreatePlayers():
   allPlayers = []
   for i in range(numPlayers):
     playerName = input(f"What is the name of player {i+1}? ")
-    allPlayers.append(Player(playerName, 10, 0, [Weapon("Dagger", "1d4 + 0", 1), Weapon("Sword", "1d6 + 2", 5)], 0))
+    allPlayers.append(Player(playerName, 10, 0, [Weapon("Dagger", "1d4 + 0", 1)], 0))
   SaveData(allPlayers, availableWeapons)
   StartArea()
 
