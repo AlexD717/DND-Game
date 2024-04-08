@@ -244,6 +244,7 @@ def Combat(allPlayers, roomEnemies):
         print(f"{player.name} has completed their cowardly retreat")
         player.status = "disengaged"
       elif playerStatusChoice == "re-engage":
+        print(f"{player.name} has decided to not be a baby and re-engage")
         player.status = "engaged"
 
     if player.status == "engaged" or player.status == "disengaged":
