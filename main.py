@@ -12,6 +12,7 @@ class Enemy:
     self.attackModifier = attackModifier
     self.ac = ac
     self.coinsToGiveOnDeath = coinsToGiveOnDeath
+
 #Adding dice rolls to weapon damage
 class Weapon:
   def __init__(self, name, damage, retreatDamage, cost):
@@ -77,8 +78,8 @@ def StartArea():
   print("\nYou are at the front of the dungeon")
   time.sleep(0.5)
   userResponse = AskQuestion(
-      "Whould you like to go visit the shop or enter the dungeon (shop/dungeon)? ",
-      ["shop", "dungeon"])
+      "Whould you like to go visit the shope, enter the dungeon, or leave the game (shop/dungeon/leave)? ",
+      ["shop", "dungeon", "leave"])
   if (userResponse == "shop"):
     print("You are visiting the shop")
     Shop()
