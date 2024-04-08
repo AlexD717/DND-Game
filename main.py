@@ -15,10 +15,10 @@ class Enemy:
 class Weapon:
   def __init__(self, name, damage, cost):
     self.name = name
-    self.baseDamage = damage.split(" + ")[1]
+    self.baseDamage = int(damage.split(" + ")[1])
     damage = damage.split(" + ")[0]
-    self.number = damage.split("d")[0]
-    self.dice = damage.split("d")[1]
+    self.number = int(damage.split("d")[0])
+    self.dice = int(damage.split("d")[1])
     self.cost = cost
     self.damage = damage
 
@@ -144,6 +144,7 @@ def Dungeon():
       StartArea()
   print(f"Congragulations, you have completed all {len(roomEnemies)} levels of the dungeon")
   StartArea()
+
 #implementing engage/disengage
 def TurnCombat(allPlayers, roomEnemies):
   currentRoomEnemies = roomEnemies
@@ -248,7 +249,7 @@ def CreatePlayers():
   allPlayers = []
   for i in range(numPlayers):
     playerName = input(f"What is the name of player {i+1}? ")
-    allPlayers.append(Player(playerName, 10, 0, [Weapon("Dagger",0, 1, 4, 1)], 0))
+    allPlayers.append(Player(playerName, 10, 0, [Weapon("Dagger", "1d4 + 0", 1)], 0))
   SaveData(allPlayers, availableWeapons)
   StartArea()
 
