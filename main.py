@@ -3,7 +3,7 @@ import random
 import pickle
 import os.path
 import math
-
+ 
 class Enemy:
   def __init__(self, name, health, ac, damage, attackModifier, coinsToGiveOnDeath):
     self.name = name
@@ -14,14 +14,18 @@ class Enemy:
     self.coinsToGiveOnDeath = coinsToGiveOnDeath
 #Adding dice rolls to weapon damage
 class Weapon:
-  def __init__(self, name, damage, cost):
+  def __init__(self, name, damage, retreatDamage, cost):
     self.name = name
     self.baseDamage = int(damage.split(" + ")[1])
     damage = damage.split(" + ")[0]
     self.number = int(damage.split("d")[0])
     self.dice = int(damage.split("d")[1])
-    self.cost = cost
     self.damage = damage
+    self.retreatDamage = retreatDamage
+    self.retreatBaseDamage = int(retreatDamage.split(" + ")[1])
+    self.retreatNumber = int((retreatDamage.split(" + ")[0]).split("d")[0])
+    self.retreatDice = int((retreatDamage.split(" + ")[0]).split("d")[1])
+    self.cost = int(cost)
 
 class Player:
   def __init__(self, name, ac, attackModifier, weaponList, coins):
@@ -35,7 +39,7 @@ class Player:
   def __reduce__(self):
     return (self.__class__, (self.name, self.ac, self.attackModifier, self.weaponList, self.coins))
 
-availableWeapons = [Weapon("Dagger", "1d4 + 0", 1), Weapon("Short Sword", "3d4 + 1", 5)]
+availableWeapons = [Weapon("Dagger", "1d4 + 0", "0d4 + 0", 1), Weapon("Short Sword", "3d4 + 1", "0d4 + 0", 5), Weapon("Training Bow", "0d4 + 0", "1d4 + 0", 3)]
 
 def SaveData(allPlayers, availableWeapons):
   with open('playerData.pkl', 'wb') as file:
@@ -156,13 +160,14 @@ def Dungeon():
   time.sleep(1)
   print("\nYou have entered the dungeon")
   room = 0
-  #randomising order
   random.shuffle(allPlayers)
+
   while (room < len(roomEnemies)):
     print(f"\nYou are entering room {room+1}")
     for player in allPlayers:
       player.status = "engaged"
-    if (TurnCombat(allPlayers, roomEnemies[room])):
+    print()
+    if Combat(allPlayers, roomEnemies[room]):
       print(f"You have defeated room {room+1}")
       room += 1
       SaveData(allPlayers, availableWeapons)
@@ -173,8 +178,52 @@ def Dungeon():
   print(f"Congragulations, you have completed all {len(roomEnemies)} levels of the dungeon")
   StartArea()
 
+def playerAttack(player, weaponUsing, enemyAttacking, currentRoomEnemies):
+  print("Rolling the dice")
+  time.sleep(1)
+  if(AttackHit(player.attackModifier, enemyAttacking.ac)):
+    if player.status == "engaged":
+      damageDealt = sum([random.randint(1, weaponUsing.dice) for i in range(weaponUsing.number)]) + weaponUsing.baseDamage
+    elif player.status == "disengaged":
+      damageDealt = sum([random.randint(1, weaponUsing.retreatDice) for i in range(weaponUsing.retreatNumber)]) + weaponUsing.retreatBaseDamage
+    else:
+      raise Exception("Invalid player status")
+    print(f"\nYour attack has hit the {enemyAttacking.name} and dealt {damageDealt} damage")
+    time.sleep(0.5)
+    enemyAttacking.health -= damageDealt
+    if (enemyAttacking.health <= 0):
+      print(f"Congradulations, you have managed to defeat the {enemyAttacking.name} and got {enemyAttacking.coinsToGiveOnDeath} coins")
+      time.sleep(0.5)
+      player.coins += enemyAttacking.coinsToGiveOnDeath
+      currentRoomEnemies.remove(enemyAttacking)
+  else:
+    print(f"\nThe {enemyAttacking.name} managed to dodge your attack")
+  print("")
+  return [currentRoomEnemies, player.coins]
+
+def enemyAttack(enemy, playersInCombat):
+  playerAttacking = random.choice(playersInCombat)
+  print(f"The {enemy.name} is attacking {playerAttacking.name}")
+  time.sleep(1)
+  if (AttackHit(enemy.attackModifier, playerAttacking.ac)):
+    print(f"The attack hit and dealt {enemy.damage} damage")
+    time.sleep(0.5)
+    playerAttacking.health -= enemy.damage
+    if (playerAttacking.health <= 0):
+      print(f"The attack has killed the weakling who calls themself {playerAttacking.name}")
+      time.sleep(0.5)
+      allPlayers.remove(playerAttacking)
+      if len(allPlayers) == 0:
+        return allPlayers
+    else:
+      print(f"{playerAttacking.name} now has {playerAttacking.health} health")
+      time.sleep(0.5)
+  else:
+    print(f"The {enemy.name}'s attack missed due to a skill issue")
+  return allPlayers
+
 #implementing engage/disengage
-def TurnCombat(allPlayers, roomEnemies):
+def Combat(allPlayers, roomEnemies):
   currentRoomEnemies = roomEnemies
   for player in allPlayers:
     print("\nThe enemies in this room are ")
@@ -182,6 +231,7 @@ def TurnCombat(allPlayers, roomEnemies):
     for enemyName in enemyNames:
       print(enemyName)
     enemyNames.append("disengage")
+    enemyNames.append("re-engage")
     if player.status == "disengaging":
       playerStatusChoice = AskQuestion(f"Would {player.name} like to complete their retreat or re-engage? (retreat/re-engage) ", ["retreat", "re-engage"])
       if playerStatusChoice == "retreat":
@@ -189,38 +239,42 @@ def TurnCombat(allPlayers, roomEnemies):
         player.status = "disengaged"
       elif playerStatusChoice == "re-engage":
         player.status = "engaged"
-    if player.status == "engaged":
-      userChoice = AskQuestion(f"Which enemy would {player.name} like to attack? Alternatively, choose to disengage. ", enemyNames)
-      if userChoice == "disengage":
-        print(f"{player.name} has decided to try and run away.")
-        player.status = "disengaging"
-        continue
-      enemyAttacking = currentRoomEnemies[enemyNames.index(userChoice)]
-      weaponNames = [weapon.name for weapon in player.weaponList]
-      print("Your weapon choices are")
-      for weapon in player.weaponList:
-        print(f"{weapon.name} that does {weapon.damage} damage")
-      userChoice = AskQuestion("Which weapon would you like to use? ", weaponNames)
-      weaponUsing = player.weaponList[weaponNames.index(userChoice)]
-      time.sleep(1)
-      print("Rolling the dice")
-      time.sleep(1)
-      if(AttackHit(player.attackModifier, enemyAttacking.ac)):
-        damageDealt = sum([random.randint(1, weaponUsing.dice) for i in range(weaponUsing.number)]) + weaponUsing.baseDamage
-        print(f"\nYour attack has hit the {enemyAttacking.name} and dealt {damageDealt} damage")
-        time.sleep(0.5)
-        enemyAttacking.health -= damageDealt
-        if (enemyAttacking.health <= 0):
-          print(f"Congradulations, you have managed to defeat the {enemyAttacking.name} and got {enemyAttacking.coinsToGiveOnDeath} coins")
-          time.sleep(0.5)
-          player.coins += enemyAttacking.coinsToGiveOnDeath
-          currentRoomEnemies.remove(enemyAttacking)
-          if (len(currentRoomEnemies) <= 0):
-            return True
+
+    if player.status == "engaged" or player.status == "disengaged":
+      if player.status == "engaged":
+        acceptableWeaponList = [weapon for weapon in player.weaponList if weapon.number != 0 or weapon.baseDamage != 0]
+      elif player.status == "disengaged":
+        acceptableWeaponList = [weapon for weapon in player.weaponList if weapon.retreatNumber != 0 or weapon.retreatBaseDamage != 0]
       else:
-        print(f"\nThe {enemyAttacking.name} managed to dodge your attack")
-    print("")
-    
+        raise Exception("Invalid Player status")
+      if len(acceptableWeaponList) != 0:
+        userChoice = AskQuestion(f"Which enemy would {player.name} like to attack? Alternatively, choose to disengage/re-engage. ", enemyNames)
+        if userChoice == "disengage":
+          print(f"{player.name} has decided to try and run away.")
+          player.status = "disengaging"
+          continue
+        if userChoice == "re-engage":
+          print(f"{player.name} has decided to re-engage")
+          player.status = "engaged"
+          continue
+        enemyAttacking = currentRoomEnemies[enemyNames.index(userChoice)]
+        weaponNames = [weapon.name for weapon in player.weaponList]
+        print("Your weapon choices are")
+        if player.status == "engaged":
+          for weapon in acceptableWeaponList:
+            print(f"{weapon.name} that does {weapon.damage} damage")
+        elif player.status == "disengaged":
+          for weapon in acceptableWeaponList:
+            print(f"{weapon.name} that does {weapon.retreatDamage} damage")
+        else:
+          raise Exception("Invalid Player Status")
+        userChoice = AskQuestion("Which weapon would you like to use? ", [weapon.name for weapon in acceptableWeaponList])
+        weaponUsing = player.weaponList[weaponNames.index(userChoice)]
+        time.sleep(1)
+        currentRoomEnemies, player.coins = playerAttack(player, weaponUsing, enemyAttacking, currentRoomEnemies)
+        if len(currentRoomEnemies) == 0:
+          return True
+
   playersInCombat = [player for player in allPlayers if player.status != "disengaged"]
   if len(playersInCombat) == 0:
     unluckyPlayer = random.choice(allPlayers)
@@ -228,25 +282,10 @@ def TurnCombat(allPlayers, roomEnemies):
     unluckyPlayer.status = "disengaging"
     playersInCombat = [unluckyPlayer]
   for enemy in currentRoomEnemies:
-    playerAttacking = random.choice(playersInCombat)
-    print(f"The {enemy.name} is attacking {playerAttacking.name}")
-    time.sleep(1)
-    if (AttackHit(enemy.attackModifier, playerAttacking.ac)):
-      print(f"The attack hit and dealt {enemy.damage} damage")
-      time.sleep(0.5)
-      playerAttacking.health -= enemy.damage
-      if (playerAttacking.health <= 0):
-        print(f"The attack has killed the weakling who calls themself {playerAttacking.name}")
-        time.sleep(0.5)
-        allPlayers.remove(playerAttacking)
-        if (len(allPlayers) <= 0):
-          return False
-      else:
-        print(f"{playerAttacking.name} now has {playerAttacking.health} health")
-        time.sleep(0.5)
-    else:
-      print(f"The {enemy.name}'s attack missed due to a skill issue")
-  return TurnCombat(allPlayers, currentRoomEnemies)
+    allPlayers = enemyAttack(enemy, playersInCombat)
+    if len(allPlayers) == 0:
+      return False
+  return Combat(allPlayers, currentRoomEnemies)
 
 def AttackHit(attackMod, ac):
   roll = random.randint(1, 20)
@@ -277,7 +316,7 @@ def CreatePlayers():
   allPlayers = []
   for i in range(numPlayers):
     playerName = input(f"What is the name of player {i+1}? ")
-    allPlayers.append(Player(playerName, 10, 0, [Weapon("Dagger", "1d4 + 0", 1)], 0))
+    allPlayers.append(Player(playerName, 10, 0, [Weapon("Dagger", "1d4 + 0", "0d4 + 0", 1), Weapon("Training Bow", "0d4 + 0", "1d4 + 0", 3)], 0))
   SaveData(allPlayers, availableWeapons)
   StartArea()
 
