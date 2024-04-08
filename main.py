@@ -85,6 +85,9 @@ def StartArea():
     Shop()
   elif userResponse == "dungeon":
     Dungeon()
+  else:
+    SaveData(allPlayers, availableWeapons)
+    exit()
 
 def BuyItem(availableItems, player):
   itemNames = [item.name for item in availableItems]
@@ -162,19 +165,21 @@ def Dungeon():
   print("\nYou have entered the dungeon")
   room = 0
   random.shuffle(allPlayers)
-
   while (room < len(roomEnemies)):
-    print(f"\nYou are entering room {room+1}")
-    for player in allPlayers:
-      player.status = "engaged"
-    print()
-    if Combat(allPlayers, roomEnemies[room]):
-      print(f"You have defeated room {room+1}")
-      room += 1
-      SaveData(allPlayers, availableWeapons)
+    userChoice = AskQuestion(f"Whould you like to proceed to room {room + 1}? ", ["yes", "no"])
+    if (userChoice == "yes"):
+      print(f"\nYou are entering room {room + 1}")
+      for player in allPlayers:
+        player.status = "engaged"
+      if Combat(allPlayers, roomEnemies[room]):
+        print(f"You have defeated room {room + 1}")
+        room += 1
+        SaveData(allPlayers, availableWeapons)
+      else:
+        print(f"You have failed to defeat room {room + 1}")
+        SaveData(allPlayers, availableWeapons)
+        StartArea()
     else:
-      print(f"You have failed to defeat room {room+1}")
-      SaveData(allPlayers, availableWeapons)
       StartArea()
   print(f"Congragulations, you have completed all {len(roomEnemies)} levels of the dungeon")
   StartArea()
@@ -244,12 +249,14 @@ def Combat(allPlayers, roomEnemies):
     if player.status == "engaged" or player.status == "disengaged":
       if player.status == "engaged":
         acceptableWeaponList = [weapon for weapon in player.weaponList if weapon.number != 0 or weapon.baseDamage != 0]
+        enemyNames.remove("re-engage")
       elif player.status == "disengaged":
         acceptableWeaponList = [weapon for weapon in player.weaponList if weapon.retreatNumber != 0 or weapon.retreatBaseDamage != 0]
+        enemyNames.remove("disengage")
       else:
         raise Exception("Invalid Player status")
       if len(acceptableWeaponList) != 0:
-        userChoice = AskQuestion(f"Which enemy would {player.name} like to attack? Alternatively, choose to disengage/re-engage. ", enemyNames)
+        userChoice = AskQuestion(f"Which enemy would {player.name} like to attack? You are currently {player.status}. Alternatively, choose to disengage/re-engage. ", enemyNames)
         if userChoice == "disengage":
           print(f"{player.name} has decided to try and run away.")
           player.status = "disengaging"
