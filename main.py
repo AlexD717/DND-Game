@@ -52,7 +52,7 @@ def LoadData():
     print("The players are ")
     for player in allPlayers:
       print(f"{player.name} with {player.coins} coins")
-      print("The weapons {player.name} has are")
+      print(f"The weapons {player.name} has are")
       for weapon in player.weaponList:
         print(f"{weapon.name} that does {weapon.damage} damage")
 
@@ -122,23 +122,28 @@ def Shop():
   StartArea()
 
 def SellItems(player: Player):
-  print("These are your items")
-  userChoices = []
-  for weapon in player.weaponList:
-    print(f"{weapon.name} is a weapon that does {weapon.damage} damage and can be sold for {math.floor(weapon.cost / 2)}")
-    userChoices.append(weapon.name)
-  userChoices.append("cancel")
-  userChoice = AskQuestion("What would you like to sell or would you like to cancel the transaction? ", userChoices)
-  if (userChoice != "cancel"):
-    weaponSelling = player.weaponList[userChoices.index(userChoice)]
-    coinsGotBack = math.floor(weaponSelling.cost / 2)
-    player.coins += coinsGotBack
-    print(f"{player.name} sold their {weaponSelling.name} for {coinsGotBack} coins.")
-    userChoice = AskQuestion("Whould you like to sell another weapon? ", ["yes", "no"])
-    if (userChoice == "yes"):
-      SellItems(Player)
-    else:
-      SaveData(allPlayers, availableWeapons)
+  if (len(player.weaponList) > 0):
+    print("These are your items")
+    userChoices = []
+    for weapon in player.weaponList:
+      print(f"{weapon.name} is a weapon that does {weapon.damage} damage and can be sold for {math.floor(weapon.cost / 2)}")
+      userChoices.append(weapon.name)
+    userChoices.append("cancel")
+    userChoice = AskQuestion("What would you like to sell or would you like to cancel the transaction? ", userChoices)
+    if (userChoice != "cancel"):
+      weaponSelling = player.weaponList[userChoices.index(userChoice)]
+      coinsGotBack = math.floor(weaponSelling.cost / 2)
+      player.coins += coinsGotBack
+      player.weaponList.remove(weaponSelling)
+      print(f"{player.name} sold their {weaponSelling.name} for {coinsGotBack} coins.")
+      userChoice = AskQuestion("Whould you like to sell another weapon? ", ["yes", "no"])
+      if (userChoice == "yes"):
+        SellItems(player)
+      else:
+        SaveData(allPlayers, availableWeapons)
+  else:
+    print("You cannot sell your last weapon")
+    SaveData(allPlayers, availableWeapons)
 
 roomEnemies = [
   [Enemy("Green Slime", 1, 5, 1, 0, 1)],
@@ -272,7 +277,7 @@ def CreatePlayers():
   allPlayers = []
   for i in range(numPlayers):
     playerName = input(f"What is the name of player {i+1}? ")
-    allPlayers.append(Player(playerName, 10, 0, [Weapon("Dagger", "1d4 + 0", 1)], 0))
+    allPlayers.append(Player(playerName, 10, 0, [Weapon("Dagger", "1d4 + 0", 1), Weapon("Sword", "1d6 + 2", 5)], 0))
   SaveData(allPlayers, availableWeapons)
   StartArea()
 
