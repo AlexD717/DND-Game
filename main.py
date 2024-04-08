@@ -2,6 +2,7 @@ import time
 import random
 import pickle
 import os.path
+import math
 
 class Enemy:
   def __init__(self, name, health, ac, damage, attackModifier, coinsToGiveOnDeath):
@@ -55,7 +56,7 @@ def LoadData():
       for weapon in player.weaponList:
         print(f"{weapon.name} that does {weapon.damage} damage")
 
-def AskQuestion(questionText, validResults):
+def AskQuestion(questionText, validResults: list):
   userAnswer = input(questionText)
   if (userAnswer in validResults):
     return userAnswer
@@ -114,8 +115,30 @@ def Shop():
     userChoice = AskQuestion(f"Whould {player.name} like to buy anything? ", ["yes", "no"])
     if (userChoice == "yes"):
       BuyItem(shopWeapons, player)
+    userChoice = AskQuestion(f"Whould {player.name} like to sell anything? ", ["yes", "no"])
+    if (userChoice == "yes"):
+      SellItems(player)
   print("Come back later when the items will be refreshed")
   StartArea()
+
+def SellItems(player: Player):
+  print("These are your items")
+  userChoices = []
+  for weapon in player.weaponList:
+    print(f"{weapon.name} is a weapon that does {weapon.damage} damage and can be sold for {math.floor(weapon.cost / 2)}")
+    userChoices.append(weapon.name)
+  userChoices.append("cancel")
+  userChoice = AskQuestion("What would you like to sell or would you like to cancel the transaction? ", userChoices)
+  if (userChoice != "cancel"):
+    weaponSelling = player.weaponList[userChoices.index(userChoice)]
+    coinsGotBack = math.floor(weaponSelling.cost / 2)
+    player.coins += coinsGotBack
+    print(f"{player.name} sold their {weaponSelling.name} for {coinsGotBack} coins.")
+    userChoice = AskQuestion("Whould you like to sell another weapon? ", ["yes", "no"])
+    if (userChoice == "yes"):
+      SellItems(Player)
+    else:
+      SaveData(allPlayers, availableWeapons)
 
 roomEnemies = [
   [Enemy("Green Slime", 1, 5, 1, 0, 1)],
