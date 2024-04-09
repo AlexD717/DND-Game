@@ -79,7 +79,20 @@ class Fighter(PlayerClass):
     if (self.level % 2 == 0):
       self.player.maxHealth += 1
       self.player.health += 1
-      print(f"Your health has increased. You are know at {self.player.health} health!")
+
+class Paladin(PlayerClass):
+  def __init__(self, className, xp=0):
+    super().__init__(className, xp)
+  def bonusAttackModifier(self, weapon: Weapon):
+    return math.floor(self.level / 5)
+  def xpIncrease(self, increase):
+    super().xpIncrease(increase)
+  def playerLeveledUp(self):
+    super().playerLeveledUp()
+    self.player.maxHealth += 1
+    self.player.health += 1
+    if (self.level % 3 == 0):
+      self.player.ac += 1
 
 class Ranger(PlayerClass):
   def __init__(self, className, xp=0):
@@ -373,7 +386,7 @@ def AskToLoadData():
     else:
       CreatePlayers()
 
-aviableClassNames = ["Fighter", "Ranger"]
+aviableClassNames = ["Fighter", "Ranger", "Paladin"]
 def CreatePlayers():
   global allPlayers
   numPlayers = int(
@@ -387,6 +400,8 @@ def CreatePlayers():
       playerClass = Fighter("Fighter")
     elif (playerClassName == "Ranger"):
       playerClass = Ranger("Ranger")
+    elif (playerClassName == "Paladin"):
+      playerClass = Paladin("Paladin")
     playerAdded = Player(playerName, playerClass, 10, 10, 0, [Weapon("Dagger", "1d4 + 0", "0d4 + 0", 1), Weapon("Training Bow", "0d4 + 0", "1d4 + 0", 3)], 0)
     allPlayers.append(playerAdded)
   SaveData(allPlayers, availableWeapons)
