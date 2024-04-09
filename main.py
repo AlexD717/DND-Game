@@ -30,27 +30,66 @@ class Weapon:
     self.cost = int(cost)
 
 class Player:
-  def __init__(self, name, ac, attackModifier, weaponList, coins, xp=0):
+  def __init__(self, name, playerClass, maxHealth, ac, attackModifier, weaponList, coins):
     self.name = name
-    self.health = 10
+    self.playerClass = playerClass
+    self.playerClass.setPlayer(self)
+    self.maxHealth = maxHealth
+    self.health = maxHealth
     self.ac = ac
     self.attackModifier = attackModifier
     self.weaponList = weaponList
     self.coins = coins
-    self.xp = xp
-    self.level = self.setPlayerLevel()
     self.status = "Not in combat"
   def __reduce__(self):
-    return (self.__class__, (self.name, self.ac, self.attackModifier, self.weaponList, self.coins, self.xp))
+    return (self.__class__, (self.name, self.playerClass, self.maxHealth, self.ac, self.attackModifier, self.weaponList, self.coins)) 
+
+# TODO Add Player Name
+class PlayerClass:
+  def __init__(self, className, xp=0):
+    self.name = className
+    self.xp = xp
+    self.level = self.setPlayerLevel()
+    self.player = None
+  def setPlayer(self, player: Player):
+    self.player = player
   def setPlayerLevel(self):
-    self.level = math.floor(math.sqrt(self.xp))
+    return math.floor(math.sqrt(self.xp))
   def xpIncrease(self, increase):
     self.xp += increase
     previousLevel = self.level
-    self.setPlayerLevel()
+    self.level = self.setPlayerLevel()
     if (previousLevel < self.level):
-      print(f"Congradulations {self.name}, you have leveled up! You are now level {self.level}.")
-      time.sleep(1)
+      self.playerLeveledUp()
+  def bonusAttackModifier(self, weapon: Weapon):
+    return 0
+  def playerLeveledUp(self):
+    print(f"Congradulations {self.player.name}, you have leveled up! You are now level {self.level}.")
+    time.sleep(1)
+
+class Fighter(PlayerClass):
+  def __init__(self, className, xp=0):
+    super().__init__(className, xp)
+  def bonusAttackModifier(self, weapon: Weapon):
+    return math.ceil(self.level / 2)
+  def xpIncrease(self, increase):
+    super().xpIncrease(increase)
+  def playerLeveledUp(self):
+    super().playerLeveledUp()
+    if (self.level % 2 == 0):
+      self.player.maxHealth += 1
+      self.player.health += 1
+      print(f"Your health has increased. You are know at {self.player.health} health!")
+
+class Ranger(PlayerClass):
+  def __init__(self, className, xp=0):
+    super().__init__(className, xp)
+  def bonusAttackModifier(self, weapon: Weapon):
+    if (weapon.retreatNumber > 0):
+      print(f"Adding bonus of {self.level}")
+      return self.level
+    else:
+      return 0
 
 availableWeapons = [Weapon("Dagger", "1d4 + 0", "0d4 + 0", 1), Weapon("Short Sword", "3d4 + 1", "0d4 + 0", 5), Weapon("Training Bow", "0d4 + 0", "1d4 + 0", 3)]
 
@@ -68,8 +107,8 @@ def LoadData():
     print(f"You are playing a {len(allPlayers)} player game.")
     print("The players are ")
     for player in allPlayers:
-      player.setPlayerLevel()
-      print(f"{player.name} who is on level {player.level} with {player.coins} coins")
+      player.playerClass.setPlayerLevel()
+      print(f"{player.name} who is a {player.playerClass.name} on level {player.playerClass.level} with {player.coins} coins")
       print(f"The weapons {player.name} has are")
       for weapon in player.weaponList:
         print(f"{weapon.name} that does {weapon.damage} damage")
@@ -87,6 +126,8 @@ def AskQuestion(questionText, validResults: list):
     return AskQuestion(questionText, validResults)
 
 def StartArea():
+  for player in allPlayers:
+    player.health = player.maxHealth
   time.sleep(1)
   print("\nYou are at the front of the dungeon")
   time.sleep(0.5)
@@ -200,7 +241,7 @@ def Dungeon():
 def playerAttack(player, weaponUsing, enemyAttacking, currentRoomEnemies):
   print("Rolling the dice")
   time.sleep(1)
-  if(AttackHit(player.attackModifier, enemyAttacking.ac)):
+  if(AttackHit(player.attackModifier + player.playerClass.bonusAttackModifier(weaponUsing), enemyAttacking.ac)):
     if player.status == "engaged":
       damageDealt = sum([random.randint(1, weaponUsing.dice) for i in range(weaponUsing.number)]) + weaponUsing.baseDamage
     elif player.status == "disengaged":
@@ -214,7 +255,7 @@ def playerAttack(player, weaponUsing, enemyAttacking, currentRoomEnemies):
       print(f"Congradulations, you have managed to defeat the {enemyAttacking.name} and got {enemyAttacking.coinsToGiveOnDeath} coins")
       time.sleep(0.5)
       player.coins += enemyAttacking.coinsToGiveOnDeath
-      player.xpIncrease(enemyAttacking.xpToGiveOnDeath)
+      player.playerClass.xpIncrease(enemyAttacking.xpToGiveOnDeath)
       currentRoomEnemies.remove(enemyAttacking)
   else:
     print(f"\nThe {enemyAttacking.name} managed to dodge your attack")
@@ -332,6 +373,7 @@ def AskToLoadData():
     else:
       CreatePlayers()
 
+aviableClassNames = ["Fighter", "Ranger"]
 def CreatePlayers():
   global allPlayers
   numPlayers = int(
@@ -339,7 +381,14 @@ def CreatePlayers():
   allPlayers = []
   for i in range(numPlayers):
     playerName = input(f"What is the name of player {i+1}? ")
-    allPlayers.append(Player(playerName, 10, 0, [Weapon("Dagger", "1d4 + 0", "0d4 + 0", 1), Weapon("Training Bow", "0d4 + 0", "1d4 + 0", 3)], 0))
+    playerClassName = AskQuestion(f"What will be the class of the player? Your options are {aviableClassNames} ", aviableClassNames)
+    playerClass = None
+    if (playerClassName == "Fighter"):
+      playerClass = Fighter("Fighter")
+    elif (playerClassName == "Ranger"):
+      playerClass = Ranger("Ranger")
+    playerAdded = Player(playerName, playerClass, 10, 10, 0, [Weapon("Dagger", "1d4 + 0", "0d4 + 0", 1), Weapon("Training Bow", "0d4 + 0", "1d4 + 0", 3)], 0)
+    allPlayers.append(playerAdded)
   SaveData(allPlayers, availableWeapons)
   StartArea()
 
