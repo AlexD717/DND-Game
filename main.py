@@ -78,7 +78,6 @@ class Fighter(PlayerClass):
     super().playerLeveledUp()
     if (self.level % 2 == 0):
       self.player.maxHealth += 1
-      self.player.health += 1
 
 class Paladin(PlayerClass):
   def __init__(self, className, xp=0):
@@ -90,8 +89,7 @@ class Paladin(PlayerClass):
   def playerLeveledUp(self):
     super().playerLeveledUp()
     self.player.maxHealth += 1
-    self.player.health += 1
-    if (self.level % 3 == 0):
+    if (self.level % 3 == 0): # TODO check if this is working
       self.player.ac += 1
 
 class Ranger(PlayerClass):
@@ -220,13 +218,13 @@ def SellItems(player: Player):
     print("You cannot sell your last weapon")
     SaveData(allPlayers, availableWeapons)
 
-roomEnemies = [
+def Dungeon():
+  global highestRoomBeat
+  roomEnemies = [
   [Enemy("Green Slime", 1, 5, 1, 0, 1, 1)],
   [Enemy("Green Slime", 1, 5, 1, 0, 1, 1), Enemy("Green Slime", 1, 5, 1, 0, 1, 1)],
   [Enemy("Green Slime", 1, 5, 1, 0, 1, 1), Enemy("Green Slime", 1, 5, 1, 0, 1, 1), Enemy("Blue Slime", 2, 7, 2, 0, 2, 3)],
 ]
-def Dungeon():
-  global highestRoomBeat
   RandomiseShopItems()
   time.sleep(1)
   print("\nYou have entered the dungeon")
@@ -374,8 +372,7 @@ def AttackHit(attackMod, ac):
     raise Exception("Something went wrong calculating if the attack hit or not")
 
 def AskToLoadData():
-  loadData = AskQuestion("Whould you like to load your previous data? ",
-                         ["yes", "no"])
+  loadData = AskQuestion("Whould you like to load your previous data? ", ["yes", "no"])
   if (loadData == "yes"):
     LoadData()
     StartArea()
