@@ -132,9 +132,42 @@ class Armor:
 
 availableGoods = [Weapon("Dagger", "1d4 + 0", "0d4 + 0", 1), 
                   Weapon("Short Sword", "3d4 + 1", "0d4 + 0", 5), 
-                  Weapon("Training Bow", "0d4 + 0", "1d4 + 0", 3), 
+                  Weapon("Two Short Swords", "4d6 + 2", "0d4 + 0", 10),
+                  Weapon("Long Sword", "4d8 + 4", "0d4 + 0", 18),
+                  Weapon("Battle Axe", "2d20 + 0", "0d4 + 0", 18),
+                  Weapon("Spear", "4d10 + 2", "2d6 + 0", 25),
+                  Weapon("Pike", "4d12 + 4", "2d8 + 2", 35),
+                  Weapon("Mace", "5d10 + 8", "0d4 + 0", 40),
+                  Weapon("Morning Star", "8d6 + 10", "0d4 + 0", 45),
+                  Weapon("Great Sword", "8d8 + 10", "0d4 + 0", 50),
+                  
+                  Weapon("Light Javelin", "3d4 + 0", "1d8 + 1", 15),
+                  Weapon("Heavy Javelin", "3d8 + 0", "1d12 + 4", 25),
+                  Weapon("Training Bow", "0d4 + 0", "1d4 + 0", 3),
+                  Weapon("Light Bow", "0d4 + 0", "1d8 + 0", 10),
+                  Weapon("Hunting Bow", "0d4 + 1", "2d6 + 2" , 15),
+                  Weapon("Long Bow", "0d4 + 2", "2d8 + 2", 20),
+                  Weapon("Heavy Bow", "0d4 + 4", "2d12 + 4", 30),
+                  Weapon("War Bow", "1d4 + 1", "4d8 + 6", 40),
+                  Weapon("Crossbow", "1d6 + 0", "5d4 + 8", 40),
+                  Weapon("Heavy War Bow", "2d4 + 0", "8d6 + 6", 50),
+                  Weapon("Heavy Crossbow", "3d4 + 2", "8d4 + 8", 50),
+                  
                   Potion("Minor Health Potion", 1, 0, 0, 0, 1),
-                  Armor("Old Leather Armor", 1, 0, 2)]
+                  Potion("Small Health Potion", 3, 0, 0, 0, 2),
+                  Potion("Medium Health Potion", 5, 0, 0, 0, 5),
+                  Potion("Large Health Potion", 10, 1, 0, 1, 10),
+                  Potion("Huge Health Potion", 15, 5, 0, 3, 15),
+                  Potion("Shield Potion", 0, 0, 0, 1, 5),
+                  Potion("Large Shield Potion", 0, 1, 0, 3, 15),
+                  
+                  Armor("Old Leather Armor", 1, 0, 2),
+                  Armor("Boiled Leather Armor", 4, 1, 5),
+                  Armor("Chainmail Armor", 8, 4, 15),
+                  Armor("Heavy Mail", 10, 8, 25),
+                  Armor("Light Plate Armor", 12, 10, 32),
+                  Armor("Plate Armor", 15, 12, 40),
+                  Armor("Heavy Plate Armor", 18, 10, 50)]
 
 def SaveData(allPlayers, availableGoods):
   with open('playerData.pkl', 'wb') as file:
@@ -275,6 +308,7 @@ def Dungeon():
   [Enemy("Green Slime", 1, 5, 1, 0, 1, 1)],
   [Enemy("Green Slime", 1, 5, 1, 0, 1, 1), Enemy("Green Slime", 1, 5, 1, 0, 1, 1)],
   [Enemy("Green Slime", 1, 5, 1, 0, 1, 1), Enemy("Green Slime", 1, 5, 1, 0, 1, 1), Enemy("Blue Slime", 2, 7, 2, 0, 2, 3)],
+  [Enemy("Skeleton", 5, 5, 5, 2, 5, 3)]
 ]
   RandomiseShopItems()
   time.sleep(1)
