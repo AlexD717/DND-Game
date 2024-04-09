@@ -3,7 +3,8 @@ import random
 import pickle
 import os.path
 import math
- 
+
+
 class Enemy:
   def __init__(self, name, health, ac, damage, attackModifier, coinsToGiveOnDeath):
     self.name = name
@@ -27,32 +28,63 @@ class Weapon:
     self.retreatNumber = int((retreatDamage.split(" + ")[0]).split("d")[0])
     self.retreatDice = int((retreatDamage.split(" + ")[0]).split("d")[1])
     self.cost = int(cost)
+    self.type = "Weapon"
 
 class Player:
   def __init__(self, name, ac, attackModifier, weaponList, coins):
     self.name = name
     self.health = 10
     self.ac = ac
+    self.acTemp = ac
     self.attackModifier = attackModifier
+    self.attackModifierTemp = attackModifier
     self.weaponList = weaponList
     self.coins = coins
     self.status = "Not in combat"
+    self.potionList = []
+    self.armorList = []
+    self.armorEquipped = None
+    self.shield = 0
+    self.shieldTemp = 0
   def __reduce__(self):
     return (self.__class__, (self.name, self.ac, self.attackModifier, self.weaponList, self.coins))
 
-availableWeapons = [Weapon("Dagger", "1d4 + 0", "0d4 + 0", 1), Weapon("Short Sword", "3d4 + 1", "0d4 + 0", 5), Weapon("Training Bow", "0d4 + 0", "1d4 + 0", 3)]
+class Potion:
+  def __init__(self, name, healthMod, acMod, attackMod, shieldMod, cost):
+    self.name = name
+    self.healthMod = healthMod
+    self.acMod = acMod
+    self.attackMod = attackMod
+    self.shieldMod = shieldMod
+    self.cost = cost
+    self.type = "Potion"
 
-def SaveData(allPlayers, availableWeapons):
+class Armor:
+  def __init__(self, name, acMod, shieldMod, cost):
+    self.name = name
+    self.type = "Armor"
+    self.acMod = acMod
+    self.shieldMod = shieldMod
+    self.cost = cost
+    
+
+availableGoods = [Weapon("Dagger", "1d4 + 0", "0d4 + 0", 1), 
+                  Weapon("Short Sword", "3d4 + 1", "0d4 + 0", 5), 
+                  Weapon("Training Bow", "0d4 + 0", "1d4 + 0", 3), 
+                  Potion("Minor Health Potion", 1, 0, 0, 0, 1),
+                  Armor("Old Leather Armor", 1, 0, 2)]
+
+def SaveData(allPlayers, availableGoods):
   with open('playerData.pkl', 'wb') as file:
-    pickle.dump([allPlayers, availableWeapons], file)
+    pickle.dump([allPlayers, availableGoods], file)
 
 def LoadData():
-  global availableWeapons
+  global availableGoods
   global allPlayers
   with open('playerData.pkl', 'rb') as file:
     saveFile = pickle.load(file)
     allPlayers = saveFile[0]
-    availableWeapons = saveFile[1]
+    availableGoods = saveFile[1]
     print(f"You are playing a {len(allPlayers)} player game.")
     print("The players are ")
     for player in allPlayers:
@@ -86,7 +118,7 @@ def StartArea():
   elif userResponse == "dungeon":
     Dungeon()
   else:
-    SaveData(allPlayers, availableWeapons)
+    SaveData(allPlayers, availableGoods)
     exit()
 
 def BuyItem(availableItems, player):
@@ -95,34 +127,53 @@ def BuyItem(availableItems, player):
   itemBuying = availableItems[itemNames.index(userChoice)]
   if (player.coins >= itemBuying.cost):
     player.coins -= itemBuying.cost
-    player.weaponList.append(itemBuying)
     print(f"You bought a {itemBuying.name} for {itemBuying.cost} coins")
     print(f"You now have {player.coins} coins")
-    print(len(player.weaponList))
+    if itemBuying.type == "Weapon":
+      player.weaponList.append(itemBuying)
+    if itemBuying.type == "Potion":
+      player.potionList.append(itemBuying)
+    if itemBuying.type == "Armor":
+      player.armorList.append(itemBuying)
+      userChoice = AskQuestion("Would you like to equip this armor? ", ["yes", "no"])
+      if userChoice == "yes":
+        player.armorEquipped = itemBuying
+        player.ac = itemBuying.acMod
+        player.shield = itemBuying.shieldMod
+        print(f"You have equipped {itemBuying.name}")
+        print(f"Your AC is now {player.ac}")
   else:
     print("You don't have enough coins to buy that")
   userChoice = AskQuestion("Whould you like to buy anything else? ", ["yes", "no"])
   if (userChoice == "yes"):
     BuyItem(availableItems, player)
 
-shopWeapons = []
+shopItems = []
 
 def RandomiseShopItems():
-  global shopWeapons
-  shopWeapons = [random.choices(availableWeapons, k=5)][0]
+  global shopItems
+  shopItems = [random.choices(availableGoods, k=5)][0]
 RandomiseShopItems()
 
 def Shop():
   time.sleep(1)
   print("\nYou are at the shop")
   time.sleep(0.2)
-  print("Here are your weapon choices")
-  for weapon in shopWeapons:
-    print(f"This weapon is a {weapon.name} that does {weapon.damage} damage and costs {weapon.cost} coins.")
+  print("Here are your item choices")
+  for item in shopItems:
+    if item.type == "Weapon":
+      print(f"This weapon is a {item.name} that does {item.damage} damage and costs {item.cost} coins.")
+    elif item.type == "Potion":
+      print(f"This {item.name} is a potion that restores {item.healthMod} health, increases your ac by {item.acMod}, increases your attack by {item.attackMod}, and costs {item.cost}")
+    elif item.type == "Armor":
+      print(f"This {item.name} is a piece of armor that increases your ac by {item.acMod}, and increases your shield by {item.shieldMod}, costing {item.cost} coins")
   for player in allPlayers:
+    #remove this
+    player.coins = 10000
+    print(f"You have {player.coins} coins")
     userChoice = AskQuestion(f"Whould {player.name} like to buy anything? ", ["yes", "no"])
     if (userChoice == "yes"):
-      BuyItem(shopWeapons, player)
+      BuyItem(shopItems, player)
     userChoice = AskQuestion(f"Whould {player.name} like to sell anything? ", ["yes", "no"])
     if (userChoice == "yes"):
       SellItems(player)
@@ -148,13 +199,13 @@ def SellItems(player: Player):
       if (userChoice == "yes"):
         SellItems(player)
       else:
-        SaveData(allPlayers, availableWeapons)
+        SaveData(allPlayers, availableGoods)
   else:
     print("You cannot sell your last weapon")
-    SaveData(allPlayers, availableWeapons)
-
+    SaveData(allPlayers, availableGoods)
+#for testing purposes
 roomEnemies = [
-  [Enemy("Green Slime", 1, 5, 1, 0, 1)],
+  [Enemy("Green Slime", 1, 5, 1, 0, 1), Enemy("Green Slime", 1, 5, 1, 0, 1), Enemy("Green Slime", 1, 5, 1, 0, 1), Enemy("Green Slime", 1, 5, 1, 0, 1), Enemy("Green Slime", 1, 5, 1, 0, 1), Enemy("Green Slime", 1, 5, 1, 0, 1)],
   [Enemy("Green Slime", 1, 5, 1, 0, 1), Enemy("Green Slime", 1, 5, 1, 0, 1)],
   [Enemy("Green Slime", 1, 5, 1, 0, 1), Enemy("Green Slime", 1, 5, 1, 0, 1), Enemy("Blue Slime", 2, 7, 2, 0, 1)],
 ]
@@ -168,16 +219,21 @@ def Dungeon():
   while (room < len(roomEnemies)):
     userChoice = AskQuestion(f"Whould you like to proceed to room {room + 1}? ", ["yes", "no"])
     if (userChoice == "yes"):
-      print(f"\nYou are entering room {room + 1}")
+      print(f"\nYou are entering room {room+1}")
       for player in allPlayers:
         player.status = "engaged"
+        player.healthTemp = player.health
+        player.acTemp = player.ac
+        player.shieldTemp = player.shield
+        player.attackModifierTemp = player.attackModifier
+      print()
       if Combat(allPlayers, roomEnemies[room]):
-        print(f"You have defeated room {room + 1}")
+        print(f"You have defeated room {room+1}")
         room += 1
-        SaveData(allPlayers, availableWeapons)
+        SaveData(allPlayers, availableGoods)
       else:
-        print(f"You have failed to defeat room {room + 1}")
-        SaveData(allPlayers, availableWeapons)
+        print(f"You have failed to defeat room {room+1}")
+        SaveData(allPlayers, availableGoods)
         StartArea()
     else:
       StartArea()
@@ -187,7 +243,7 @@ def Dungeon():
 def playerAttack(player, weaponUsing, enemyAttacking, currentRoomEnemies):
   print("Rolling the dice")
   time.sleep(1)
-  if(AttackHit(player.attackModifier, enemyAttacking.ac)):
+  if(AttackHit(player.attackModifierTemp, enemyAttacking.ac)):
     if player.status == "engaged":
       damageDealt = sum([random.randint(1, weaponUsing.dice) for i in range(weaponUsing.number)]) + weaponUsing.baseDamage
     elif player.status == "disengaged":
@@ -211,22 +267,37 @@ def enemyAttack(enemy, playersInCombat):
   playerAttacking = random.choice(playersInCombat)
   print(f"The {enemy.name} is attacking {playerAttacking.name}")
   time.sleep(1)
-  if (AttackHit(enemy.attackModifier, playerAttacking.ac)):
+  if (AttackHit(enemy.attackModifier, playerAttacking.acTemp)):
     print(f"The attack hit and dealt {enemy.damage} damage")
     time.sleep(0.5)
-    playerAttacking.health -= enemy.damage
-    if (playerAttacking.health <= 0):
+    playerAttacking.healthTemp -= enemy.damage - playerAttacking.shieldTemp
+    if (playerAttacking.healthTemp <= 0):
       print(f"The attack has killed the weakling who calls themself {playerAttacking.name}")
       time.sleep(0.5)
       allPlayers.remove(playerAttacking)
       if len(allPlayers) == 0:
         return allPlayers
     else:
-      print(f"{playerAttacking.name} now has {playerAttacking.health} health")
+      print(f"{playerAttacking.name} now has {playerAttacking.healthTemp} health")
       time.sleep(0.5)
   else:
     print(f"The {enemy.name}'s attack missed due to a skill issue")
   return allPlayers
+
+def usePotion(player):
+  print("The potions you have avaliable are:")
+  potionNames = [potion.name for potion in player.potionList]
+  for potion in potionNames:
+    print(potion)
+  userChoice = AskQuestion("Which potions would you like to use? ", potionNames)
+  potionUsing = player.potionList[potionNames.index(userChoice)]
+  player.healthTemp += potionUsing.healthMod
+  player.acTemp += potionUsing.acMod
+  player.attackModifierTemp += potionUsing.attackMod
+  player.potionList.remove(potionUsing)
+  print(f"You have used {potionUsing.name}.")
+  print(f"You now have {player.healthTemp} health, your ac is now {player.acTemp} ac,, your shield is now {player.shieldTemp} and your attack modifier is now {player.attackModifierTemp}.")
+  return [player.healthTemp, player.acTemp, player.attackModifierTemp, player.shieldTemp, player.potionList]
 
 #implementing engage/disengage
 def Combat(allPlayers, roomEnemies):
@@ -263,7 +334,7 @@ def Combat(allPlayers, roomEnemies):
           player.status = "disengaging"
           continue
         if userChoice == "re-engage":
-          print(f"{player.name} has decided to re-engage")
+          print(f"{player.name} has regained some courage and has decided to re-engage")
           player.status = "engaged"
           continue
         enemyAttacking = currentRoomEnemies[enemyNames.index(userChoice)]
@@ -283,7 +354,19 @@ def Combat(allPlayers, roomEnemies):
         currentRoomEnemies, player.coins = playerAttack(player, weaponUsing, enemyAttacking, currentRoomEnemies)
         if len(currentRoomEnemies) == 0:
           return True
-
+      else:
+        userChoice = AskQuestion("You have no weapons that can be used currently. Would you like to disengage/re-engage? " , ["disengage", "re-engage", "no"])
+        if userChoice == "disengage":
+          print(f"{player.name} has decided to try and run away")
+          player.status = "disengaging"
+        elif userChoice == "re-engage":
+          print(f"{player.name} has regained some courage and has decided to re-engage")
+          player.status = "engaged"
+      if player.status == "disengaged" and len(player.potionList) > 0:
+        userChoice = AskQuestion("Would you like to use a potion? ", ["yes", "no"])
+        if userChoice == "yes":
+          player.healthTemp, player.acTemp, player.attackModifierTemp, player.shieldTemp, player.potionList = usePotion(player)
+  
   playersInCombat = [player for player in allPlayers if player.status != "disengaged"]
   if len(playersInCombat) == 0:
     unluckyPlayer = random.choice(allPlayers)
@@ -325,8 +408,10 @@ def CreatePlayers():
   allPlayers = []
   for i in range(numPlayers):
     playerName = input(f"What is the name of player {i+1}? ")
-    allPlayers.append(Player(playerName, 10, 0, [Weapon("Dagger", "1d4 + 0", "0d4 + 0", 1), Weapon("Training Bow", "0d4 + 0", "1d4 + 0", 3)], 0))
-  SaveData(allPlayers, availableWeapons)
+    allPlayers.append(Player(playerName, 10, 0, 
+                    [Weapon("Dagger", "1d4 + 0", "0d4 + 0", 1), 
+                     Weapon("Training Bow", "0d4 + 0", "1d4 + 0", 3)], 0))
+  SaveData(allPlayers, availableGoods)
   StartArea()
 
 if (os.path.isfile("./playerData.pkl")):
