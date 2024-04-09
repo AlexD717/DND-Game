@@ -6,13 +6,14 @@ import math
 
 
 class Enemy:
-  def __init__(self, name, health, ac, damage, attackModifier, coinsToGiveOnDeath):
+  def __init__(self, name, health, ac, damage, attackModifier, coinsToGiveOnDeath, xpToGiveOnDeath):
     self.name = name
     self.health = health
     self.damage = damage
     self.attackModifier = attackModifier
     self.ac = ac
     self.coinsToGiveOnDeath = coinsToGiveOnDeath
+    self.xpToGiveOnDeath = xpToGiveOnDeath
 
 #Adding dice rolls to weapon damage
 class Weapon:
@@ -31,9 +32,12 @@ class Weapon:
     self.type = "Weapon"
 
 class Player:
-  def __init__(self, name, ac, attackModifier, weaponList, coins):
+  def __init__(self, name, playerClass, maxHealth, ac, attackModifier, weaponList, coins):
     self.name = name
-    self.health = 10
+    self.playerClass = playerClass
+    self.playerClass.setPlayer(self)
+    self.maxHealth = maxHealth
+    self.health = maxHealth
     self.ac = ac
     self.acTemp = ac
     self.attackModifier = attackModifier
@@ -47,7 +51,65 @@ class Player:
     self.shield = 0
     self.shieldTemp = 0
   def __reduce__(self):
-    return (self.__class__, (self.name, self.ac, self.attackModifier, self.weaponList, self.coins))
+    return (self.__class__, (self.name, self.playerClass, self.maxHealth, self.ac, self.attackModifier, self.weaponList, self.coins)) 
+
+# TODO Add Player Name
+class PlayerClass:
+  def __init__(self, className, xp=0):
+    self.name = className
+    self.xp = xp
+    self.level = self.setPlayerLevel()
+    self.player = None
+  def setPlayer(self, player: Player):
+    self.player = player
+  def setPlayerLevel(self):
+    return math.floor(math.sqrt(self.xp))
+  def xpIncrease(self, increase):
+    self.xp += increase
+    previousLevel = self.level
+    self.level = self.setPlayerLevel()
+    if (previousLevel < self.level):
+      self.playerLeveledUp()
+  def bonusAttackModifier(self, weapon: Weapon):
+    return 0
+  def playerLeveledUp(self):
+    print(f"Congradulations {self.player.name}, you have leveled up! You are now level {self.level}.")
+    time.sleep(1)
+
+class Fighter(PlayerClass):
+  def __init__(self, className, xp=0):
+    super().__init__(className, xp)
+  def bonusAttackModifier(self, weapon: Weapon):
+    return math.ceil(self.level / 2)
+  def xpIncrease(self, increase):
+    super().xpIncrease(increase)
+  def playerLeveledUp(self):
+    super().playerLeveledUp()
+    if (self.level % 2 == 0):
+      self.player.maxHealth += 1
+
+class Paladin(PlayerClass):
+  def __init__(self, className, xp=0):
+    super().__init__(className, xp)
+  def bonusAttackModifier(self, weapon: Weapon):
+    return math.floor(self.level / 5)
+  def xpIncrease(self, increase):
+    super().xpIncrease(increase)
+  def playerLeveledUp(self):
+    super().playerLeveledUp()
+    self.player.maxHealth += 1
+    if (self.level % 3 == 0): # TODO check if this is working
+      self.player.ac += 1
+
+class Ranger(PlayerClass):
+  def __init__(self, className, xp=0):
+    super().__init__(className, xp)
+  def bonusAttackModifier(self, weapon: Weapon):
+    if (weapon.retreatNumber > 0):
+      print(f"Adding bonus of {self.level}")
+      return self.level
+    else:
+      return 0
 
 class Potion:
   def __init__(self, name, healthMod, acMod, attackMod, shieldMod, cost):
@@ -88,7 +150,8 @@ def LoadData():
     print(f"You are playing a {len(allPlayers)} player game.")
     print("The players are ")
     for player in allPlayers:
-      print(f"{player.name} with {player.coins} coins")
+      player.playerClass.setPlayerLevel()
+      print(f"{player.name} who is a {player.playerClass.name} on level {player.playerClass.level} with {player.coins} coins")
       print(f"The weapons {player.name} has are")
       for weapon in player.weaponList:
         print(f"{weapon.name} that does {weapon.damage} damage")
@@ -106,6 +169,8 @@ def AskQuestion(questionText, validResults: list):
     return AskQuestion(questionText, validResults)
 
 def StartArea():
+  for player in allPlayers:
+    player.health = player.maxHealth
   time.sleep(1)
   print("\nYou are at the front of the dungeon")
   time.sleep(0.5)
@@ -209,8 +274,14 @@ roomEnemies = [
   [Enemy("Green Slime", 1, 5, 1, 0, 1), Enemy("Green Slime", 1, 5, 1, 0, 1)],
   [Enemy("Green Slime", 1, 5, 1, 0, 1), Enemy("Green Slime", 1, 5, 1, 0, 1), Enemy("Blue Slime", 2, 7, 2, 0, 1)],
 ]
+
 def Dungeon():
   global highestRoomBeat
+  roomEnemies = [
+  [Enemy("Green Slime", 1, 5, 1, 0, 1, 1)],
+  [Enemy("Green Slime", 1, 5, 1, 0, 1, 1), Enemy("Green Slime", 1, 5, 1, 0, 1, 1)],
+  [Enemy("Green Slime", 1, 5, 1, 0, 1, 1), Enemy("Green Slime", 1, 5, 1, 0, 1, 1), Enemy("Blue Slime", 2, 7, 2, 0, 2, 3)],
+]
   RandomiseShopItems()
   time.sleep(1)
   print("\nYou have entered the dungeon")
@@ -243,7 +314,7 @@ def Dungeon():
 def playerAttack(player, weaponUsing, enemyAttacking, currentRoomEnemies):
   print("Rolling the dice")
   time.sleep(1)
-  if(AttackHit(player.attackModifierTemp, enemyAttacking.ac)):
+  if(AttackHit(player.attackModifierTemp + player.playerClass.bonusAttackModifier(weaponUsing), enemyAttacking.ac)):
     if player.status == "engaged":
       damageDealt = sum([random.randint(1, weaponUsing.dice) for i in range(weaponUsing.number)]) + weaponUsing.baseDamage
     elif player.status == "disengaged":
@@ -257,6 +328,7 @@ def playerAttack(player, weaponUsing, enemyAttacking, currentRoomEnemies):
       print(f"Congradulations, you have managed to defeat the {enemyAttacking.name} and got {enemyAttacking.coinsToGiveOnDeath} coins")
       time.sleep(0.5)
       player.coins += enemyAttacking.coinsToGiveOnDeath
+      player.playerClass.xpIncrease(enemyAttacking.xpToGiveOnDeath)
       currentRoomEnemies.remove(enemyAttacking)
   else:
     print(f"\nThe {enemyAttacking.name} managed to dodge your attack")
@@ -389,8 +461,7 @@ def AttackHit(attackMod, ac):
     raise Exception("Something went wrong calculating if the attack hit or not")
 
 def AskToLoadData():
-  loadData = AskQuestion("Whould you like to load your previous data? ",
-                         ["yes", "no"])
+  loadData = AskQuestion("Whould you like to load your previous data? ", ["yes", "no"])
   if (loadData == "yes"):
     LoadData()
     StartArea()
@@ -401,6 +472,7 @@ def AskToLoadData():
     else:
       CreatePlayers()
 
+aviableClassNames = ["Fighter", "Ranger", "Paladin"]
 def CreatePlayers():
   global allPlayers
   numPlayers = int(
@@ -408,9 +480,16 @@ def CreatePlayers():
   allPlayers = []
   for i in range(numPlayers):
     playerName = input(f"What is the name of player {i+1}? ")
-    allPlayers.append(Player(playerName, 10, 0, 
-                    [Weapon("Dagger", "1d4 + 0", "0d4 + 0", 1), 
-                     Weapon("Training Bow", "0d4 + 0", "1d4 + 0", 3)], 0))
+    playerClassName = AskQuestion(f"What will be the class of the player? Your options are {aviableClassNames} ", aviableClassNames)
+    playerClass = None
+    if (playerClassName == "Fighter"):
+      playerClass = Fighter("Fighter")
+    elif (playerClassName == "Ranger"):
+      playerClass = Ranger("Ranger")
+    elif (playerClassName == "Paladin"):
+      playerClass = Paladin("Paladin")
+    playerAdded = Player(playerName, playerClass, 10, 10, 0, [Weapon("Dagger", "1d4 + 0", "0d4 + 0", 1), Weapon("Training Bow", "0d4 + 0", "1d4 + 0", 3)], 0)
+    allPlayers.append(playerAdded)
   SaveData(allPlayers, availableGoods)
   StartArea()
 
