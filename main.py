@@ -5,13 +5,14 @@ import os.path
 import math
  
 class Enemy:
-  def __init__(self, name, health, ac, damage, attackModifier, coinsToGiveOnDeath):
+  def __init__(self, name, health, ac, damage, attackModifier, coinsToGiveOnDeath, xpToGiveOnDeath):
     self.name = name
     self.health = health
     self.damage = damage
     self.attackModifier = attackModifier
     self.ac = ac
     self.coinsToGiveOnDeath = coinsToGiveOnDeath
+    self.xpToGiveOnDeath = xpToGiveOnDeath
 
 #Adding dice rolls to weapon damage
 class Weapon:
@@ -29,16 +30,27 @@ class Weapon:
     self.cost = int(cost)
 
 class Player:
-  def __init__(self, name, ac, attackModifier, weaponList, coins):
+  def __init__(self, name, ac, attackModifier, weaponList, coins, xp=0):
     self.name = name
     self.health = 10
     self.ac = ac
     self.attackModifier = attackModifier
     self.weaponList = weaponList
     self.coins = coins
+    self.xp = xp
+    self.level = self.setPlayerLevel()
     self.status = "Not in combat"
   def __reduce__(self):
-    return (self.__class__, (self.name, self.ac, self.attackModifier, self.weaponList, self.coins))
+    return (self.__class__, (self.name, self.ac, self.attackModifier, self.weaponList, self.coins, self.xp))
+  def setPlayerLevel(self):
+    self.level = math.floor(math.sqrt(self.xp))
+  def xpIncrease(self, increase):
+    self.xp += increase
+    previousLevel = self.level
+    self.setPlayerLevel()
+    if (previousLevel < self.level):
+      print(f"Congradulations {self.name}, you have leveled up! You are now level {self.level}.")
+      time.sleep(1)
 
 availableWeapons = [Weapon("Dagger", "1d4 + 0", "0d4 + 0", 1), Weapon("Short Sword", "3d4 + 1", "0d4 + 0", 5), Weapon("Training Bow", "0d4 + 0", "1d4 + 0", 3)]
 
@@ -56,7 +68,8 @@ def LoadData():
     print(f"You are playing a {len(allPlayers)} player game.")
     print("The players are ")
     for player in allPlayers:
-      print(f"{player.name} with {player.coins} coins")
+      player.setPlayerLevel()
+      print(f"{player.name} who is on level {player.level} with {player.coins} coins")
       print(f"The weapons {player.name} has are")
       for weapon in player.weaponList:
         print(f"{weapon.name} that does {weapon.damage} damage")
@@ -154,9 +167,9 @@ def SellItems(player: Player):
     SaveData(allPlayers, availableWeapons)
 
 roomEnemies = [
-  [Enemy("Green Slime", 1, 5, 1, 0, 1)],
-  [Enemy("Green Slime", 1, 5, 1, 0, 1), Enemy("Green Slime", 1, 5, 1, 0, 1)],
-  [Enemy("Green Slime", 1, 5, 1, 0, 1), Enemy("Green Slime", 1, 5, 1, 0, 1), Enemy("Blue Slime", 2, 7, 2, 0, 1)],
+  [Enemy("Green Slime", 1, 5, 1, 0, 1, 1)],
+  [Enemy("Green Slime", 1, 5, 1, 0, 1, 1), Enemy("Green Slime", 1, 5, 1, 0, 1, 1)],
+  [Enemy("Green Slime", 1, 5, 1, 0, 1, 1), Enemy("Green Slime", 1, 5, 1, 0, 1, 1), Enemy("Blue Slime", 2, 7, 2, 0, 2, 3)],
 ]
 def Dungeon():
   global highestRoomBeat
@@ -201,6 +214,7 @@ def playerAttack(player, weaponUsing, enemyAttacking, currentRoomEnemies):
       print(f"Congradulations, you have managed to defeat the {enemyAttacking.name} and got {enemyAttacking.coinsToGiveOnDeath} coins")
       time.sleep(0.5)
       player.coins += enemyAttacking.coinsToGiveOnDeath
+      player.xpIncrease(enemyAttacking.xpToGiveOnDeath)
       currentRoomEnemies.remove(enemyAttacking)
   else:
     print(f"\nThe {enemyAttacking.name} managed to dodge your attack")
