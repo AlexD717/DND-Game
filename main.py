@@ -6,11 +6,8 @@ import math
 
 highestRoomBeat = 0
 
-
 class Enemy:
-
-  def __init__(self, name, health, ac, damage, attackModifier,
-               coinsToGiveOnDeath, xpToGiveOnDeath):
+  def __init__(self, name, health, ac, damage, attackModifier, coinsToGiveOnDeath, xpToGiveOnDeath):
     self.name = name
     self.health = health
     self.damage = damage
@@ -18,7 +15,6 @@ class Enemy:
     self.ac = ac
     self.coinsToGiveOnDeath = coinsToGiveOnDeath
     self.xpToGiveOnDeath = xpToGiveOnDeath
-
 
 #Adding dice rolls to weapon damage
 class Weapon:
@@ -38,10 +34,28 @@ class Weapon:
     self.roomRequirement = roomRequirement
 
 
-class Player:
+class Potion:
+  def __init__(self, name, healthMod, acMod, attackMod, shieldMod, cost, roomRequirement=0):
+    self.name = name
+    self.healthMod = healthMod
+    self.acMod = acMod
+    self.attackMod = attackMod
+    self.shieldMod = shieldMod
+    self.cost = cost
+    self.type = "Potion"
+    self.roomRequirement = roomRequirement
 
-  def __init__(self, name, playerClass, maxHealth, ac, attackModifier,
-               weaponList, coins):
+class Armor:
+  def __init__(self, name, acMod, shieldMod, cost, roomRequirement=0):
+    self.name = name
+    self.type = "Armor"
+    self.acMod = acMod
+    self.shieldMod = shieldMod
+    self.cost = cost
+    self.roomRequirement = roomRequirement
+
+class Player:
+  def __init__(self, name, playerClass, maxHealth, ac, attackModifier, weaponList, coins):
     self.name = name
     self.playerClass = playerClass
     self.playerClass.setPlayer(self)
@@ -59,42 +73,29 @@ class Player:
     self.armorEquipped = None
     self.shield = 0
     self.shieldTemp = 0
-
   def __reduce__(self):
-    return (self.__class__,
-            (self.name, self.playerClass, self.maxHealth, self.ac,
-             self.attackModifier, self.weaponList, self.coins))
+    return (self.__class__, (self.name, self.playerClass, self.maxHealth, self.ac, self.attackModifier, self.weaponList, self.coins))
 
-
-# TODO Add Player Name
 class PlayerClass:
-
   def __init__(self, className, xp=0):
     self.name = className
     self.xp = xp
     self.level = self.setPlayerLevel()
     self.player = None
-
   def setPlayer(self, player: Player):
     self.player = player
-
   def setPlayerLevel(self):
     return math.floor(math.sqrt(self.xp))
-
   def xpIncrease(self, increase):
     self.xp += increase
     previousLevel = self.level
     self.level = self.setPlayerLevel()
     if (previousLevel < self.level):
       self.playerLeveledUp()
-
   def bonusAttackModifier(self, weapon: Weapon):
     return 0
-
   def playerLeveledUp(self):
-    print(
-        f"Congradulations {self.player.name}, you have leveled up! You are now level {self.level}."
-    )
+    print(f"Congradulations {self.player.name}, you have leveled up! You are now level {self.level}.")
     time.sleep(1)
 
 
@@ -112,56 +113,27 @@ class Fighter(PlayerClass):
 
 
 class Paladin(PlayerClass):
-
   def __init__(self, className, xp=0):
     super().__init__(className, xp)
-
   def bonusAttackModifier(self, weapon: Weapon):
     return math.floor(self.level / 5)
-
   def xpIncrease(self, increase):
     super().xpIncrease(increase)
-
   def playerLeveledUp(self):
     super().playerLeveledUp()
     self.player.maxHealth += 1
     if (self.level % 3 == 0):  # TODO check if this is working
       self.player.ac += 1
 
-
 class Ranger(PlayerClass):
-
   def __init__(self, className, xp=0):
     super().__init__(className, xp)
-
   def bonusAttackModifier(self, weapon: Weapon):
     if (weapon.retreatNumber > 0):
       print(f"Adding bonus of {self.level}")
       return self.level
     else:
       return 0
-
-
-class Potion:
-  def __init__(self, name, healthMod, acMod, attackMod, shieldMod, cost, roomRequirement=0):
-    self.name = name
-    self.healthMod = healthMod
-    self.acMod = acMod
-    self.attackMod = attackMod
-    self.shieldMod = shieldMod
-    self.cost = cost
-    self.type = "Potion"
-    self.roomRequirement = roomRequirement
-
-
-class Armor:
-  def __init__(self, name, acMod, shieldMod, cost, roomRequirement=0):
-    self.name = name
-    self.type = "Armor"
-    self.acMod = acMod
-    self.shieldMod = shieldMod
-    self.cost = cost
-    self.roomRequirement = roomRequirement
 
 
 availableGoods = [
@@ -219,12 +191,14 @@ def LoadData():
     print("The players are ")
     for player in allPlayers:
       player.playerClass.setPlayerLevel()
-      print(
-          f"{player.name} who is a {player.playerClass.name} on level {player.playerClass.level} with {player.coins} coins"
-      )
+      print(f"{player.name} who is a {player.playerClass.name} on level {player.playerClass.level} with {player.coins} coins")
       print(f"The weapons {player.name} has are")
       for weapon in player.weaponList:
-        print(f"{weapon.name} that does {weapon.damage} damage")
+        if (weapon.number > 0):
+          print(f"{weapon.name} that does {weapon.number}d{weapon.dice} + {weapon.baseDamage} damage")
+        if (weapon.retreatNumber > 0):
+          print(f"{weapon.name} that does {weapon.retreatNumber}d{weapon.retreatDice} + {weapon.retreatBaseDamage} damage")
+    print(f"Your highest room beat is {highestRoomBeat}")
   RandomiseShopItems()
 
 
@@ -274,8 +248,7 @@ def BuyItem(availableItems, player):
       player.potionList.append(itemBuying)
     if itemBuying.type == "Armor":
       player.armorList.append(itemBuying)
-      userChoice = AskQuestion("Would you like to equip this armor? ",
-                               ["yes", "no"])
+      userChoice = AskQuestion("Would you like to equip this armor? ", ["yes", "no"])
       if userChoice == "yes":
         player.armorEquipped = itemBuying
         player.ac = itemBuying.acMod
@@ -284,15 +257,12 @@ def BuyItem(availableItems, player):
         print(f"Your AC is now {player.ac}")
   else:
     print("You don't have enough coins to buy that")
-  userChoice = AskQuestion("Whould you like to buy anything else? ",
-                           ["yes", "no"])
+  userChoice = AskQuestion("Whould you like to buy anything else? ", ["yes", "no"])
   if (userChoice == "yes"):
     BuyItem(availableItems, player)
 
 
 shopItems = []
-
-
 def RandomiseShopItems():
   global shopItems
   goodsPlayerCanGet = []
@@ -311,11 +281,11 @@ def Shop():
   for item in shopItems:
     if item.type == "Weapon":
       print(
-          f"This weapon is a {item.name} that does {item.damage} damage and costs {item.cost} coins."
+          f"This weapon is a {item.name} that does {item.damage} damage on the frontline, {item.rdamage} on the backline, and costs {item.cost} coins."
       )
     elif item.type == "Potion":
       print(
-          f"This {item.name} is a potion that restores {item.healthMod} health, increases your ac by {item.acMod}, increases your attack by {item.attackMod}, and costs {item.cost}"
+          f"This {item.name} is a potion that restores {item.healthMod} health, increases your ac by {item.acMod}, increases your attack by {item.attackMod}, increases your shield by {item.shield} and costs {item.cost}"
       )
     elif item.type == "Armor":
       print(
@@ -325,26 +295,21 @@ def Shop():
     #remove this
     player.coins = 10000
     print(f"You have {player.coins} coins")
-    userChoice = AskQuestion(f"Whould {player.name} like to buy anything? ",
-                             ["yes", "no"])
+    userChoice = AskQuestion(f"Whould {player.name} like to buy anything? ", ["yes", "no"])
     if (userChoice == "yes"):
       BuyItem(shopItems, player)
-    userChoice = AskQuestion(f"Whould {player.name} like to sell anything? ",
-                             ["yes", "no"])
+    userChoice = AskQuestion(f"Whould {player.name} like to sell anything? ", ["yes", "no"])
     if (userChoice == "yes"):
       SellItems(player)
   print("Come back later when the items will be refreshed")
   StartArea()
-
 
 def SellItems(player: Player):
   if (len(player.weaponList) > 1):
     print("These are your items")
     userChoices = []
     for weapon in player.weaponList:
-      print(
-          f"{weapon.name} is a weapon that does {weapon.damage} damage and can be sold for {math.floor(weapon.cost / 2)}"
-      )
+      print(f"{weapon.name} is a weapon that does {weapon.damage} damage and can be sold for {math.floor(weapon.cost2)}")
       userChoices.append(weapon.name)
     userChoices.append("cancel")
     userChoice = AskQuestion(
@@ -386,17 +351,17 @@ def Dungeon():
   print("\nYou have entered the dungeon")
   room = 0
   random.shuffle(allPlayers)
+  for player in allPlayers:
+    player.status = "engaged"
+    player.healthTemp = player.health
+    player.acTemp = player.ac
+    player.shieldTemp = player.shield
+    player.attackModifierTemp = player.attackModifier
   while (room < len(roomEnemies)):
     userChoice = AskQuestion(
         f"Whould you like to proceed to room {room + 1}? ", ["yes", "no"])
     if (userChoice == "yes"):
       print(f"\nYou are entering room {room+1}")
-      for player in allPlayers:
-        player.status = "engaged"
-        player.healthTemp = player.health
-        player.acTemp = player.ac
-        player.shieldTemp = player.shield
-        player.attackModifierTemp = player.attackModifier
       print()
       if Combat(allPlayers, roomEnemies[room]):
         print(f"You have defeated room {room+1}")
